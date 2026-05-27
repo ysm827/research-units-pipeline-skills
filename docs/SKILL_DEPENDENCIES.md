@@ -28,8 +28,6 @@ flowchart LR
   S_appendix_table_writer["`appendix-table-writer`"]:::skill
   F_GOAL_md["`GOAL.md`"]:::file
   F_GOAL_md --> S_appendix_table_writer
-  F_assets_table_cell_hygiene_json["`assets/table_cell_hygiene.json`"]:::file
-  F_assets_table_cell_hygiene_json --> S_appendix_table_writer
   F_citations_ref_bib --> S_appendix_table_writer
   F_outline_anchor_sheet_jsonl --> S_appendix_table_writer
   F_outline_evidence_drafts_jsonl --> S_appendix_table_writer
@@ -39,8 +37,6 @@ flowchart LR
   F_outline_table_schema_md --> S_appendix_table_writer
   F_outline_tables_index_md["`outline/tables_index.md`"]:::file
   F_outline_tables_index_md --> S_appendix_table_writer
-  F_references_table_cell_hygiene_md["`references/table_cell_hygiene.md`"]:::file
-  F_references_table_cell_hygiene_md --> S_appendix_table_writer
   F_outline_tables_appendix_md["`outline/tables_appendix.md`"]:::file
   S_appendix_table_writer --> F_outline_tables_appendix_md
   S_argument_selfloop["`argument-selfloop`"]:::skill
@@ -139,8 +135,6 @@ flowchart LR
   F_outline_subsection_briefs_jsonl --> S_claim_matrix_rewriter
   S_claim_matrix_rewriter --> F_outline_claim_evidence_matrix_md
   S_claims_extractor["`claims-extractor`"]:::skill
-  F_DECISIONS_md["`DECISIONS.md`"]:::file
-  F_DECISIONS_md --> S_claims_extractor
   F_output_PAPER_md["`output/PAPER.md`"]:::file
   F_output_PAPER_md --> S_claims_extractor
   F_output_CLAIMS_md["`output/CLAIMS.md`"]:::file
@@ -157,20 +151,6 @@ flowchart LR
   F_papers_papers_dedup_jsonl["`papers/papers_dedup.jsonl`"]:::file
   S_dedupe_rank --> F_papers_papers_dedup_jsonl
   S_deliverable_selfloop["`deliverable-selfloop`"]:::skill
-  F_output_APPENDIX_md["`output/APPENDIX.md`"]:::file
-  F_output_APPENDIX_md --> S_deliverable_selfloop
-  F_output_REPORT_json["`output/REPORT.json`"]:::file
-  F_output_REPORT_json --> S_deliverable_selfloop
-  F_output_REPORT_md["`output/REPORT.md`"]:::file
-  F_output_REPORT_md --> S_deliverable_selfloop
-  F_output_trace_IDEA_DIRECTION_POOL_md["`output/trace/IDEA_DIRECTION_POOL.md`"]:::file
-  F_output_trace_IDEA_DIRECTION_POOL_md --> S_deliverable_selfloop
-  F_output_trace_IDEA_SCREENING_TABLE_md["`output/trace/IDEA_SCREENING_TABLE.md`"]:::file
-  F_output_trace_IDEA_SCREENING_TABLE_md --> S_deliverable_selfloop
-  F_output_trace_IDEA_SHORTLIST_md["`output/trace/IDEA_SHORTLIST.md`"]:::file
-  F_output_trace_IDEA_SHORTLIST_md --> S_deliverable_selfloop
-  F_output_trace_IDEA_SIGNAL_TABLE_md["`output/trace/IDEA_SIGNAL_TABLE.md`"]:::file
-  F_output_trace_IDEA_SIGNAL_TABLE_md --> S_deliverable_selfloop
   F_output_DELIVERABLE_SELFLOOP_TODO_md["`output/DELIVERABLE_SELFLOOP_TODO.md`"]:::file
   S_deliverable_selfloop --> F_output_DELIVERABLE_SELFLOOP_TODO_md
   S_draft_polisher["`draft-polisher`"]:::skill
@@ -240,6 +220,7 @@ flowchart LR
   F_papers_screening_log_csv --> S_extraction_form
   S_extraction_form --> F_papers_extraction_table_csv
   S_front_matter_writer["`front-matter-writer`"]:::skill
+  F_DECISIONS_md["`DECISIONS.md`"]:::file
   F_DECISIONS_md --> S_front_matter_writer
   F_GOAL_md --> S_front_matter_writer
   F_citations_ref_bib --> S_front_matter_writer
@@ -333,8 +314,12 @@ flowchart LR
   S_literature_engineer --> F_papers_papers_raw_jsonl
   S_literature_engineer --> F_papers_retrieval_report_md
   S_manuscript_ingest["`manuscript-ingest`"]:::skill
-  F_GOAL_md --> S_manuscript_ingest
-  F_output_PAPER_md --> S_manuscript_ingest
+  F_inputs_manuscript_md["`inputs/manuscript.md`"]:::file
+  F_inputs_manuscript_md --> S_manuscript_ingest
+  F_inputs_manuscript_pdf["`inputs/manuscript.pdf`"]:::file
+  F_inputs_manuscript_pdf --> S_manuscript_ingest
+  F_inputs_manuscript_txt["`inputs/manuscript.txt`"]:::file
+  F_inputs_manuscript_txt --> S_manuscript_ingest
   S_manuscript_ingest --> F_output_PAPER_md
   S_module_planner["`module-planner`"]:::skill
   F_outline_concept_graph_yml --> S_module_planner
@@ -425,8 +410,6 @@ flowchart LR
   F_GOAL_md --> S_pipeline_router
   F_PIPELINE_lock_md --> S_pipeline_router
   F_STATUS_md --> S_pipeline_router
-  F_assets_pipeline_selection_form_md["`assets/pipeline-selection-form.md`"]:::file
-  F_assets_pipeline_selection_form_md --> S_pipeline_router
   S_pipeline_router --> F_DECISIONS_md
   S_pipeline_router --> F_GOAL_md
   S_pipeline_router --> F_PIPELINE_lock_md
@@ -459,6 +442,7 @@ flowchart LR
   F_DECISIONS_md --> S_protocol_writer
   F_GOAL_md --> S_protocol_writer
   F_STATUS_md --> S_protocol_writer
+  F_queries_md --> S_protocol_writer
   S_protocol_writer --> F_output_PROTOCOL_md
   S_redundancy_pruner["`redundancy-pruner`"]:::skill
   F_outline_outline_yml --> S_redundancy_pruner
@@ -657,12 +641,9 @@ flowchart LR
   F_codex_md_chapter_rewrite_rules_md["`codex_md/chapter_rewrite_rules.md`"]:::file
   S_thesis_chapter_reconstructor --> F_codex_md_chapter_rewrite_rules_md
   S_thesis_citation_enhance_review["`thesis-citation-enhance-review`"]:::skill
-  F_references_bib["`references/*.bib`"]:::file
-  F_references_bib --> S_thesis_citation_enhance_review
   S_thesis_compile_review["`thesis-compile-review`"]:::skill
   F_claude_md_review_checklist_md["`claude_md/review_checklist.md`"]:::file
   F_claude_md_review_checklist_md --> S_thesis_compile_review
-  F_references_bib --> S_thesis_compile_review
   S_thesis_compile_review --> F_claude_md_review_checklist_md
   F_output_THESIS_BUILD_REPORT_md["`output/THESIS_BUILD_REPORT.md`"]:::file
   S_thesis_compile_review --> F_output_THESIS_BUILD_REPORT_md
@@ -730,8 +711,6 @@ flowchart LR
   F_chapters_tex --> S_thesis_workspace_init
   F_pdf["`pdf/`"]:::file
   F_pdf --> S_thesis_workspace_init
-  F_references["`references/`"]:::file
-  F_references --> S_thesis_workspace_init
   S_thesis_workspace_init --> F_claude_md_review_checklist_md
   S_thesis_workspace_init --> F_codex_md_00_thesis_outline_md
   S_thesis_workspace_init --> F_codex_md_material_index_md

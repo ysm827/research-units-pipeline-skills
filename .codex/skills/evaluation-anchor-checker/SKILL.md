@@ -122,3 +122,16 @@ Better (downgrade when context is missing):
 ### Quick Start
 
 - `python .codex/skills/evaluation-anchor-checker/scripts/run.py --workspace workspaces/<ws>`
+
+### All Options
+
+- `--workspace <dir>`: workspace containing `sections/*.md` or merged draft artifacts
+- `--unit-id <id>`: optional harness metadata
+- `--inputs <semicolon-separated>`: optional override from `UNITS.csv`
+- `--outputs <semicolon-separated>`: optional output override; default includes `output/EVAL_ANCHOR_REPORT.md`
+- `--checkpoint <C*>`: optional harness metadata
+
+### Examples
+
+- Run the numeric hygiene sweep before merge:
+  - `python .codex/skills/evaluation-anchor-checker/scripts/run.py --workspace workspaces/<ws> --inputs 'sections/*.md;outline/writer_context_packs.jsonl;citations/ref.bib' --outputs 'sections/*.md;output/EVAL_ANCHOR_REPORT.md;output/eval_anchors_checked.refined.ok'`

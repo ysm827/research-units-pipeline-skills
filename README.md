@@ -30,6 +30,15 @@ These workflows share the same architecture:
 
 Use these workflow names directly. The old alias names have been removed from active routing.
 
+## Skills And Harness
+
+The repo has two layers:
+
+- **Skills** are the semantic units. They describe the research judgment: what to read, what artifact to produce, what acceptance criteria apply, and what guardrails must not be violated.
+- **The harness** is the deterministic support layer around those skills. It initializes workspaces, runs unit scripts, validates pipeline contracts, checks generated dependency docs, diagnoses workspace state, records per-unit output manifests, recovers interrupted `DOING` units, and runs CI smoke tests.
+
+Keep that split when changing the project: put domain judgment and writing policy in skills; put repeatable checks, recovery, and orchestration in the harness.
+
 ## Core Concepts
 
 - `Pipeline`: the contract for a workflow. It defines stages, artifacts, checkpoints, and required skills.
@@ -119,6 +128,20 @@ If you want tighter control, pin the pipeline directly:
 - [pipelines/idea-brainstorm.pipeline.md](pipelines/idea-brainstorm.pipeline.md)
 - [pipelines/source-tutorial.pipeline.md](pipelines/source-tutorial.pipeline.md)
 - [pipelines/graduate-paper-pipeline.md](pipelines/graduate-paper-pipeline.md)
+
+## Developer Harness
+
+Use these checks before changing pipeline contracts or skill IO:
+
+```bash
+python -m pytest -q
+python scripts/validate_repo.py
+python scripts/audit_skills.py
+python scripts/generate_skill_graph.py
+python scripts/pipeline.py doctor --workspace workspaces/<name>
+```
+
+`validate_repo.py --strict --no-check-quality` is the blocking contract gate for executable pipelines. `audit_skills.py` reports review signals by default and exits non-zero only for blocking errors. `pipeline.py doctor` is the workspace-level harness check: it shows the current checkpoint, unit status counts, the next runnable unit, missing dependencies, and missing DONE outputs. Scripted units also write `output/unit_logs/<unit>.<skill>.manifest.json` with output hashes for traceability.
 
 ## Recommended Reading Path
 

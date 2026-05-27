@@ -18,6 +18,7 @@ from tooling.common import (
     update_status_field,
     update_status_log,
 )
+from tooling.harness import write_unit_manifest
 
 
 @dataclass(frozen=True)
@@ -110,6 +111,14 @@ def run_one_unit(
         return RunResult(unit_id=None, status="ERROR", message=f"Missing {units_path}")
 
     table = UnitsTable.load(units_path)
+    recovered = recover_stale_doing_units(table)
+    if recovered:
+        table.save(units_path)
+        update_status_log(
+            status_path,
+            f"{now_iso_seconds()} RECOVERED stale DOING unit(s) to BLOCKED: {', '.join(recovered)}",
+        )
+
     runnable_idx = _find_first_runnable(table)
     if runnable_idx is None:
         return RunResult(unit_id=None, status="IDLE", message="No runnable unit found")
@@ -226,6 +235,26 @@ def run_one_unit(
         _refresh_status_checkpoint(status_path, table)
         return RunResult(unit_id=unit_id, status="BLOCKED", message=str(exc))
 
+    def record_manifest(status: str) -> None:
+        try:
+            write_unit_manifest(
+                workspace=workspace,
+                unit_id=unit_id,
+                skill=skill,
+                outputs=outputs,
+                exit_code=int(completed.returncode),
+                status=status,
+            )
+        except Exception as exc:  # pragma: no cover
+            _append_run_error(
+                workspace=workspace,
+                unit_id=unit_id,
+                skill=skill,
+                kind="manifest_error",
+                message=f"{type(exc).__name__}: {exc}",
+                log_rel=log_rel if log_path.exists() else None,
+            )
+
     missing = [rel for rel in required_outputs if rel and not (workspace / rel).exists()]
     if completed.returncode == 0 and not missing:
         if strict:
@@ -248,6 +277,7 @@ def run_one_unit(
             if issues:
                 row["status"] = "BLOCKED"
                 table.save(units_path)
+                record_manifest("BLOCKED")
                 rel_report = str((workspace / "output" / "QUALITY_GATE.md").relative_to(workspace))
                 update_status_log(status_path, f"{now_iso_seconds()} {unit_id} BLOCKED (quality gate: {rel_report})")
                 _refresh_status_checkpoint(status_path, table)
@@ -262,6 +292,7 @@ def run_one_unit(
         if cutover_block:
             row["status"] = "BLOCKED"
             table.save(units_path)
+            record_manifest("BLOCKED")
             update_status_log(status_path, f"{now_iso_seconds()} {unit_id} BLOCKED (section-first cutover)")
             _append_run_error(
                 workspace=workspace,
@@ -276,12 +307,14 @@ def run_one_unit(
 
         row["status"] = "DONE"
         table.save(units_path)
+        record_manifest("DONE")
         update_status_log(status_path, f"{now_iso_seconds()} {unit_id} DONE {skill}")
         _refresh_status_checkpoint(status_path, table)
         return RunResult(unit_id=unit_id, status="DONE", message="OK")
 
     row["status"] = "BLOCKED"
     table.save(units_path)
+    record_manifest("BLOCKED")
     if missing:
         update_status_log(status_path, f"{now_iso_seconds()} {unit_id} BLOCKED (missing outputs: {', '.join(missing)})")
         _append_run_error(
@@ -305,6 +338,35 @@ def run_one_unit(
     )
     _refresh_status_checkpoint(status_path, table)
     return RunResult(unit_id=unit_id, status="BLOCKED", message=f"Skill script failed (exit {completed.returncode})" + (f"; see {log_rel}" if log_path.exists() else ""))
+
+
+def recover_stale_doing_units(table: UnitsTable) -> list[str]:
+    """Move the first resumable stale `DOING` unit back into the runnable queue.
+
+    The runner is single-unit and single-process. A persisted `DOING` usually means
+    the previous harness process was interrupted after claiming the unit but before
+    it could write DONE/BLOCKED. Recover only one unit per invocation so reruns stay
+    auditable and downstream state is not rewritten speculatively.
+    """
+
+    status_ok = {"DONE", "SKIP"}
+    unit_by_id = {row.get("unit_id", ""): row for row in table.rows}
+    for row in table.rows:
+        if row.get("status", "").strip().upper() != "DOING":
+            continue
+        deps = parse_semicolon_list(row.get("depends_on"))
+        deps_done = True
+        for dep_id in deps:
+            dep = unit_by_id.get(dep_id)
+            if not dep or dep.get("status", "").strip().upper() not in status_ok:
+                deps_done = False
+                break
+        if not deps_done:
+            return []
+        row["status"] = "BLOCKED"
+        unit_id = row.get("unit_id", "").strip()
+        return [unit_id] if unit_id else []
+    return []
 
 
 def _find_first_runnable(table: UnitsTable) -> int | None:

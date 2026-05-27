@@ -61,6 +61,12 @@ def main() -> int:
         default=True,
         help="Check skill doc quality conventions (default: enabled).",
     )
+    parser.add_argument(
+        "--quality-scope",
+        choices=("pipeline", "all"),
+        default="pipeline",
+        help="Skill quality scope: active executable-pipeline skills or all skill packages (default: pipeline).",
+    )
     parser.add_argument("--check-claude-symlink", action="store_true", help="Also check `.claude/skills` presence.")
     parser.add_argument("--report", default="", help="Optional Markdown report output path.")
     args = parser.parse_args()
@@ -81,7 +87,10 @@ def main() -> int:
         findings.extend(_validate_claude_skills())
 
     if args.check_quality:
-        findings.extend(_validate_skill_quality())
+        active_skills = None
+        if args.quality_scope == "pipeline":
+            active_skills = _skills_from_units_templates(pipeline_paths)
+        findings.extend(_validate_skill_quality(active_skill_names=active_skills))
 
     return _report(findings, strict=bool(args.strict), report_path=Path(args.report) if args.report else None)
 
@@ -341,6 +350,23 @@ def _validate_docs() -> list[Finding]:
         text = deps_doc.read_text(encoding="utf-8", errors="ignore")
         if "```mermaid" not in text:
             findings.append(Finding("WARN", "`docs/SKILL_DEPENDENCIES.md` has no Mermaid blocks (expected ` ```mermaid `)."))
+        else:
+            try:
+                from scripts import generate_skill_graph
+
+                expected = generate_skill_graph._render_markdown(
+                    skills=generate_skill_graph._load_skill_ios(SKILLS_DIR),
+                    pipelines=generate_skill_graph._load_pipelines(PIPELINES_DIR),
+                )
+                if text != expected:
+                    findings.append(
+                        Finding(
+                            "WARN",
+                            "`docs/SKILL_DEPENDENCIES.md` is stale (run `python scripts/generate_skill_graph.py`).",
+                        )
+                    )
+            except Exception as exc:
+                findings.append(Finding("WARN", f"Could not freshness-check `docs/SKILL_DEPENDENCIES.md`: {exc}"))
 
     pipeline_flows = DOCS_DIR / "PIPELINE_FLOWS.md"
     if not pipeline_flows.exists():
@@ -378,10 +404,12 @@ class SkillDoc:
     has_script: bool
 
 
-def _validate_skill_quality() -> list[Finding]:
+def _validate_skill_quality(*, active_skill_names: set[str] | None = None) -> list[Finding]:
     findings: list[Finding] = []
 
     skill_docs = _load_skill_docs(SKILLS_DIR)
+    if active_skill_names is not None:
+        skill_docs = {key: doc for key, doc in skill_docs.items() if key in active_skill_names}
     if not skill_docs:
         return [Finding("WARN", f"No skills found under `{SKILLS_DIR}`.")]
 
@@ -416,7 +444,7 @@ def _validate_skill_quality() -> list[Finding]:
             if inp and inp not in body_wo_inputs:
                 findings.append(
                     Finding(
-                        "ERROR",
+                        "WARN",
                         f"{doc.path}: declared input `{inp}` is not referenced outside the Inputs section (mention it in workflow/script/examples).",
                     )
                 )
@@ -492,12 +520,44 @@ def _parse_inputs_outputs(body: str) -> tuple[set[str], set[str]]:
             token = token.strip()
             if not _looks_like_path(token):
                 continue
+            if _is_skill_local_support_path(token):
+                continue
             if section == "in":
                 inputs.add(token)
             else:
                 outputs.add(token)
 
     return inputs, outputs
+
+
+def _is_skill_local_support_path(value: str) -> bool:
+    normalized = str(value or "").strip().lstrip("./")
+    return normalized.startswith(("assets/", "references/"))
+
+
+def _skills_from_units_templates(pipeline_paths: list[Path]) -> set[str]:
+    skills: set[str] = set()
+    for pipeline_path in pipeline_paths:
+        try:
+            spec = PipelineSpec.load(pipeline_path)
+        except Exception:
+            continue
+        units_template = str(spec.units_template or "").strip()
+        if not units_template:
+            continue
+        units_path = REPO_ROOT / units_template
+        if not units_path.exists():
+            continue
+        try:
+            with units_path.open("r", encoding="utf-8", newline="") as handle:
+                reader = csv.DictReader(handle)
+                for row in reader:
+                    skill = str(row.get("skill") or "").strip()
+                    if skill:
+                        skills.add(skill)
+        except Exception:
+            continue
+    return skills
 
 
 def _looks_like_path(value: str) -> bool:

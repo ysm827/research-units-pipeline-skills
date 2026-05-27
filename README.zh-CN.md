@@ -30,6 +30,15 @@
 
 现在请直接使用这些最新 workflow 名称。旧别名已经不再参与 active routing。
 
+## Skills 和 Harness
+
+这个仓库分两层：
+
+- **Skills** 是语义执行单元。它们描述研究判断：该读什么、产出什么工件、验收标准是什么、哪些 guardrail 不能破。
+- **Harness** 是围绕 skills 的确定性支撑层。它负责初始化 workspace、运行 unit scripts、验证 pipeline 合同、检查生成的依赖图、诊断 workspace 状态、记录每个 unit 的输出 manifest、恢复中断后遗留的 `DOING` unit，并在 CI 里跑 smoke tests。
+
+改项目时保持这个分工：领域判断和写作政策放在 skills；可重复的校验、恢复和编排放在 harness。
+
 ## 核心概念
 
 - `Pipeline`：工作流合同，定义阶段、工件、检查点和所需 skills。
@@ -119,6 +128,20 @@ Use the graduate-paper workflow to reorganize my Chinese thesis materials before
 - [pipelines/idea-brainstorm.pipeline.md](pipelines/idea-brainstorm.pipeline.md)
 - [pipelines/source-tutorial.pipeline.md](pipelines/source-tutorial.pipeline.md)
 - [pipelines/graduate-paper-pipeline.md](pipelines/graduate-paper-pipeline.md)
+
+## Developer Harness
+
+修改 pipeline 合同或 skill IO 前，建议先跑：
+
+```bash
+python -m pytest -q
+python scripts/validate_repo.py
+python scripts/audit_skills.py
+python scripts/generate_skill_graph.py
+python scripts/pipeline.py doctor --workspace workspaces/<name>
+```
+
+`validate_repo.py --strict --no-check-quality` 是可执行 pipelines 的阻塞合同检查。`audit_skills.py` 默认只报告 review signal，只有 blocking error 才会非零退出。`pipeline.py doctor` 是 workspace 级 harness 检查：它会展示当前 checkpoint、unit 状态计数、下一个可运行 unit、缺失依赖和 DONE unit 缺失输出。脚本型 unit 还会写入 `output/unit_logs/<unit>.<skill>.manifest.json`，记录输出哈希，方便追踪。
 
 ## 推荐阅读路径
 

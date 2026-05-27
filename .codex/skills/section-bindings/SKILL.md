@@ -16,7 +16,11 @@ description: |
 Always read:
 - `references/overview.md`
 
-Use `scripts/run.py` only for deterministic binding and report materialization.
+Use `scripts/run.py` only for deterministic binding and report materialization:
+- read `papers/core_set.csv` as the authoritative paper pool
+- read `outline/chapter_skeleton.yml` as the chapter contract
+- read `papers/papers_dedup.jsonl` when available for richer metadata
+- write auditable binding artifacts without inventing papers
 
 ## Inputs
 
@@ -38,3 +42,16 @@ Use `scripts/run.py` only for deterministic binding and report materialization.
 ### Quick Start
 
 - `python .codex/skills/section-bindings/scripts/run.py --workspace <workspace_dir>`
+
+### All Options
+
+- `--workspace <dir>`: workspace containing the core set and chapter skeleton
+- `--unit-id <id>`: optional harness metadata
+- `--inputs <semicolon-separated>`: optional override from `UNITS.csv`
+- `--outputs <semicolon-separated>`: optional output override; defaults are `outline/section_bindings.jsonl` and `outline/section_binding_report.md`
+- `--checkpoint <C*>`: optional harness metadata
+
+### Examples
+
+- Bind papers to chapters before H3 decomposition:
+  - `python .codex/skills/section-bindings/scripts/run.py --workspace workspaces/<ws> --inputs 'papers/core_set.csv;outline/chapter_skeleton.yml;papers/papers_dedup.jsonl' --outputs 'outline/section_bindings.jsonl;outline/section_binding_report.md'`

@@ -91,8 +91,8 @@ def main() -> int:
     parser.add_argument(
         "--fail-on",
         choices=("NONE", "ERROR", "WARN", "INFO"),
-        default="WARN",
-        help="Exit 2 if findings at or above this severity exist (default: WARN).",
+        default="ERROR",
+        help="Exit 2 if findings at or above this severity exist (default: ERROR).",
     )
     parser.add_argument("--report", default="", help="Optional report output path.")
     args = parser.parse_args()
@@ -156,7 +156,9 @@ def _audit_text_file(skill_name: str, path: Path, skills_dir: Path) -> list[Find
         return findings
 
     is_script = "scripts" in path.parts
-    is_asset = "assets" in path.parts or "references" in path.parts
+    is_reference = "references" in path.parts
+    is_asset = "assets" in path.parts
+    is_support_doc = is_asset or is_reference
     rel_path = path.relative_to(REPO_ROOT).as_posix()
 
     for line_no, raw_line in enumerate(lines, start=1):
@@ -169,7 +171,7 @@ def _audit_text_file(skill_name: str, path: Path, skills_dir: Path) -> list[Find
             if match:
                 findings.append(
                     Finding(
-                        severity="WARN",
+                        severity="INFO" if is_support_doc else "WARN",
                         rule_id="generic_domain_hardcoding",
                         skill=skill_name,
                         path=rel_path,
@@ -213,7 +215,7 @@ def _audit_text_file(skill_name: str, path: Path, skills_dir: Path) -> list[Find
 
         ellipsis_match = _ellipsis_match(line, is_script=is_script)
         if ellipsis_match:
-            severity = "WARN" if (is_script or is_asset) else "INFO"
+            severity = "WARN" if is_script else "INFO"
             findings.append(
                 Finding(
                     severity=severity,

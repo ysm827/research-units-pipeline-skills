@@ -146,12 +146,19 @@ def _parse_inputs_outputs(body: str) -> tuple[set[str], set[str]]:
             token = token.strip()
             if not _looks_like_path(token):
                 continue
+            if _is_skill_local_support_path(token):
+                continue
             if section == "in":
                 inputs.add(token)
             else:
                 outputs.add(token)
 
     return inputs, outputs
+
+
+def _is_skill_local_support_path(value: str) -> bool:
+    normalized = str(value or "").strip().lstrip("./")
+    return normalized.startswith(("assets/", "references/"))
 
 
 def _looks_like_path(value: str) -> bool:

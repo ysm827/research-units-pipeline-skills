@@ -10,6 +10,7 @@ sys.path.insert(0, str(REPO_ROOT))
 
 from tooling.common import atomic_write_text, copy_tree, resolve_pipeline_spec_path, today_iso
 from tooling.executor import run_one_unit
+from tooling.harness import build_doctor_report
 from tooling.pipeline_spec import PipelineSpec
 
 def _normalize_pipeline_name(pipeline: str) -> str:
@@ -66,6 +67,9 @@ def main() -> int:
         default=[],
         help="Auto-tick approvals in DECISIONS.md (repeatable, e.g., --auto-approve C2).",
     )
+
+    doctor_p = sub.add_parser("doctor", help="Diagnose workspace harness state without running units")
+    doctor_p.add_argument("--workspace", required=True, help="Workspace directory")
 
     approve_p = sub.add_parser("approve", help="Tick an approval checkbox in DECISIONS.md (e.g., Approve C2)")
     approve_p.add_argument("--workspace", required=True, help="Workspace directory")
@@ -219,6 +223,12 @@ def main() -> int:
             if result.status != "DONE":
                 break
         return 0 if last_result is None or last_result.status in {"DONE", "IDLE"} else 2
+
+    if args.cmd == "doctor":
+        workspace = Path(args.workspace).resolve()
+        exit_code, report = build_doctor_report(workspace=workspace, repo_root=repo_root)
+        print(report, end="")
+        return exit_code
 
     if args.cmd == "approve":
         workspace = Path(args.workspace).resolve()

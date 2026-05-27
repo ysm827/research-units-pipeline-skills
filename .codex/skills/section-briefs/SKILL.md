@@ -16,7 +16,11 @@ description: |
 Always read:
 - `references/overview.md`
 
-Use `scripts/run.py` only for deterministic brief assembly.
+Use `scripts/run.py` only for deterministic brief assembly:
+- read `outline/chapter_skeleton.yml` for chapter IDs and target shape
+- read `outline/section_bindings.jsonl` for saturation and gap signals
+- read `GOAL.md` when present for run-level scope
+- write `outline/section_briefs.jsonl` as planning substrate, not prose
 
 ## Inputs
 
@@ -37,3 +41,16 @@ Use `scripts/run.py` only for deterministic brief assembly.
 ### Quick Start
 
 - `python .codex/skills/section-briefs/scripts/run.py --workspace <workspace_dir>`
+
+### All Options
+
+- `--workspace <dir>`: workspace containing chapter skeleton and section bindings
+- `--unit-id <id>`: optional harness metadata
+- `--inputs <semicolon-separated>`: optional override from `UNITS.csv`
+- `--outputs <semicolon-separated>`: optional output override; default is `outline/section_briefs.jsonl`
+- `--checkpoint <C*>`: optional harness metadata
+
+### Examples
+
+- Build chapter-level briefs from the section-first layer:
+  - `python .codex/skills/section-briefs/scripts/run.py --workspace workspaces/<ws> --inputs 'outline/chapter_skeleton.yml;outline/section_bindings.jsonl;GOAL.md' --outputs 'outline/section_briefs.jsonl'`
