@@ -36,6 +36,7 @@ retrieval, compile LaTeX, execute units, or judge semantic research quality.
 | `verdict` | string | `PASS` when all checks pass; otherwise `ATTENTION`. |
 | `showcase_doc` | string | Repo-relative showcase document path. |
 | `checks` | list | Ordered check records. |
+| `scorecard` | list | Optional ordered fixture coverage records emitted by the current producer. |
 | `note` | string | Boundary note describing what the audit does not prove. |
 
 ## Check Records
@@ -56,6 +57,29 @@ Current check ids:
 - `pipeline_protocols`
 - `research_brief_fixture`
 - `source_tutorial_fixture`
+
+## Scorecard Records
+
+The current producer emits `scorecard` as an additive field. Consumers that do
+not need fixture coverage can ignore it, but consumers that do read it should
+validate each item before using the counts.
+
+Each `scorecard` item is an object:
+
+| Field | Type | Meaning |
+|---|---|---|
+| `id` | string | Fixture id matching a fixture check id. |
+| `label` | string | Reader-facing fixture label. |
+| `status` | string | `PASS` when all tracked files and required markers are present; otherwise `WARN`. |
+| `tracked_files` | integer | Number of fixture files expected by the showcase contract. |
+| `present_files` | integer | Number of expected fixture files currently present. |
+| `required_markers` | integer | Number of required evidence markers checked inside fixture files. |
+| `present_markers` | integer | Number of required markers currently present. |
+| `evidence_surface` | string | Compact human-readable coverage summary. |
+
+The scorecard is deliberately conservative. It is a coverage summary for the
+portable exhibit, not a semantic benchmark, reader-quality score, or proof that
+live retrieval and compilation still work.
 
 ## Compatibility Rule
 

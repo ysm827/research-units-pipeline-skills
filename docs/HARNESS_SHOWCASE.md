@@ -57,6 +57,11 @@ fixture protocol files exist, and that the tracked deliverables are not
 placeholder-only examples. It is intentionally narrower than a live run audit:
 it does not rerun retrieval, compile LaTeX, or judge semantic quality.
 
+The same audit also emits a conservative fixture scorecard. The scorecard is
+not a benchmark. It only counts whether each portable fixture exposes its
+tracked files and required evidence markers, so readers can compare coverage
+without mistaking it for semantic research quality.
+
 ## Tracked Research-Brief Fixture
 
 The tracked fixture lives at:

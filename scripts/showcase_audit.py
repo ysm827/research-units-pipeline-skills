@@ -90,6 +90,18 @@ class ShowcaseCheck:
     next_action: str
 
 
+@dataclass(frozen=True)
+class ShowcaseScore:
+    id: str
+    label: str
+    status: str
+    tracked_files: int
+    present_files: int
+    required_markers: int
+    present_markers: int
+    evidence_surface: str
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(
         description=(
@@ -129,6 +141,7 @@ def build_showcase_audit(*, repo_root: Path) -> dict[str, object]:
         _check_pipeline_protocols(repo_root=repo_root),
     ]
     checks.extend(_check_fixture_group(repo_root=repo_root, group=group) for group in FIXTURE_GROUPS)
+    scorecard = [_score_fixture_group(repo_root=repo_root, group=group) for group in FIXTURE_GROUPS]
     verdict = "PASS" if all(check.status == "PASS" for check in checks) else "ATTENTION"
     return {
         "schema": SCHEMA,
@@ -136,6 +149,7 @@ def build_showcase_audit(*, repo_root: Path) -> dict[str, object]:
         "verdict": verdict,
         "showcase_doc": SHOWCASE_DOC,
         "checks": [asdict(check) for check in checks],
+        "scorecard": [asdict(score) for score in scorecard],
         "note": (
             "This audit checks the portable showcase fixtures under example/. "
             "It does not rerun retrieval, LaTeX compilation, or semantic quality review."
@@ -166,6 +180,25 @@ def validate_showcase_audit_payload(payload: dict[str, object]) -> list[str]:
                 issues.append(f"`checks[{index}].{key}` must be a string.")
         if check.get("status") not in {"PASS", "WARN"}:
             issues.append(f"`checks[{index}].status` must be `PASS` or `WARN`.")
+    scorecard = payload.get("scorecard")
+    if scorecard is None:
+        return issues
+    if not isinstance(scorecard, list):
+        issues.append("`scorecard` must be a list when present.")
+        return issues
+    for index, score in enumerate(scorecard):
+        if not isinstance(score, dict):
+            issues.append(f"`scorecard[{index}]` must be an object.")
+            continue
+        for key in ("id", "label", "evidence_surface"):
+            if not isinstance(score.get(key), str):
+                issues.append(f"`scorecard[{index}].{key}` must be a string.")
+        if score.get("status") not in {"PASS", "WARN"}:
+            issues.append(f"`scorecard[{index}].status` must be `PASS` or `WARN`.")
+        for key in ("tracked_files", "present_files", "required_markers", "present_markers"):
+            value = score.get(key)
+            if not isinstance(value, int) or value < 0:
+                issues.append(f"`scorecard[{index}].{key}` must be a non-negative integer.")
     return issues
 
 
@@ -289,6 +322,43 @@ def _check_fixture_group(*, repo_root: Path, group: dict[str, object]) -> Showca
     )
 
 
+def _score_fixture_group(*, repo_root: Path, group: dict[str, object]) -> ShowcaseScore:
+    root = str(group["root"])
+    expected_paths = [path for path in HARNESS_SHOWCASE_FIXTURE_PATHS if path.startswith(root + "/")]
+    present_files = sum(1 for path in expected_paths if (repo_root / path).exists())
+
+    required_terms = dict(group.get("required_terms", {}))
+    required_markers = 0
+    present_markers = 0
+    for rel_path, terms in required_terms.items():
+        term_set = _as_terms(terms)
+        required_markers += len(term_set)
+        full_path = repo_root / root / str(rel_path)
+        if not full_path.exists():
+            continue
+        text = _read_text(full_path)
+        present_markers += sum(1 for term in term_set if term in text)
+
+    status = (
+        "PASS"
+        if present_files == len(expected_paths) and present_markers == required_markers
+        else "WARN"
+    )
+    return ShowcaseScore(
+        id=str(group["id"]),
+        label=str(group["label"]),
+        status=status,
+        tracked_files=len(expected_paths),
+        present_files=present_files,
+        required_markers=required_markers,
+        present_markers=present_markers,
+        evidence_surface=(
+            f"{present_files}/{len(expected_paths)} tracked files; "
+            f"{present_markers}/{required_markers} required markers"
+        ),
+    )
+
+
 def _has_placeholder_text(text: str) -> bool:
     return bool(re.search(r"\bplaceholder\b|\bTBD\b|\blorem ipsum\b", text, flags=re.IGNORECASE))
 
@@ -333,6 +403,30 @@ def render_markdown(payload: dict[str, object]) -> str:
                 next_action=_escape_cell(str(check["next_action"])),
             )
         )
+    scorecard = payload.get("scorecard")
+    if isinstance(scorecard, list) and scorecard:
+        lines.extend(
+            [
+                "",
+                "## Fixture Scorecard",
+                "",
+                "| Fixture | Status | Files | Markers | Evidence surface |",
+                "|---|---|---:|---:|---|",
+            ]
+        )
+        for item in scorecard:
+            score = dict(item)
+            files = f"{score['present_files']}/{score['tracked_files']}"
+            markers = f"{score['present_markers']}/{score['required_markers']}"
+            lines.append(
+                "| {label} | {status} | {files} | {markers} | {surface} |".format(
+                    label=_escape_cell(str(score["label"])),
+                    status=_escape_cell(str(score["status"])),
+                    files=_escape_cell(files),
+                    markers=_escape_cell(markers),
+                    surface=_escape_cell(str(score["evidence_surface"])),
+                )
+            )
     return "\n".join(lines) + "\n"
 
 

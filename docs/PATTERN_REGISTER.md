@@ -38,6 +38,7 @@ needs a repo-local mapping, a status, and a next action.
 | MADR/ADR templates | Keep architecture decisions compact but structured enough for future readers and validators | `docs/adr/README.md`, ADR status/date/section contract, `scripts/validate_repo.py` ADR checks | `Adopted` | Keep ADRs short; add a new ADR only when a decision affects repo-level contracts or long-term maintenance |
 | JSON Schema-style compatibility | Version machine-readable artifacts before external consumers rely on them | `skill-audit-report.v1`, `doctor-report.v1`, `run-audit.v1`, `run-audit-diff.v1`, `harness-showcase-audit.v1`, `improvement-report.v1`, `artifact-pack.v1`, `validate_skill_audit_payload`, `validate_doctor_payload`, `validate_run_audit_payload`, `validate_run_audit_diff_payload`, `validate_showcase_audit_payload`, `validate_improvement_payload`, `validate_artifact_pack_payload`, `docs/SKILL_AUDIT_SCHEMA.md`, `docs/DOCTOR_REPORT_SCHEMA.md`, `docs/RUN_AUDIT_SCHEMA.md`, `docs/RUN_AUDIT_DIFF_SCHEMA.md`, `docs/SHOWCASE_AUDIT_SCHEMA.md`, `docs/IMPROVEMENT_REPORT_SCHEMA.md`, `docs/ARTIFACT_PACK_SCHEMA.md` | `Partial` | Add formal JSON Schema files only if a non-Python consumer appears |
 | SARIF static analysis interchange | Represent static-analysis findings with stable machine-readable records for tool interoperability | `skill-audit-report.v1`, finding records, severity/rule/category fields, and `validate_skill_audit_payload` | `Partial` | Keep repo-local JSON primary; consider SARIF export only if GitHub code scanning or another external static-analysis consumer appears |
+| DVC / MLflow metrics and artifacts | Keep evaluation evidence as structured metrics and inspectable artifacts before adding dashboards | `harness-showcase-audit.v1` scorecard, tracked fixture files, required evidence markers, `docs/SHOWCASE_AUDIT_SCHEMA.md` | `Partial` | Keep current scorecard limited to coverage; add semantic metrics only after repeated completed workspaces expose stable criteria |
 | Evaluation harnesses and benchmark dashboards | Compare runs over time with stable inputs, outputs, and scoring | run audit, audit diff, target artifact coverage, unit manifests, quality reports | `Partial` | Keep the lightweight diff; defer dashboards and semantic scoring until at least three representative completed workspaces exist |
 | Database-backed run stores | Query many historical runs across workspaces | none; workspace files are the current run ledger | `Deferred` | Revisit only when file-based audit becomes painful |
 | External workflow runtimes | Schedule, retry, and distribute concurrent runs | none; the harness is intentionally local and file-first | `Deferred` | Revisit when multiple concurrent or remote-worker runs are required |
@@ -59,6 +60,7 @@ to a current repo file before changing the harness.
 | MADR/ADR templates | Minimal decision records with status, context, decision, consequences, and links | Do repo-level architecture decisions have enough structure for validation and future agents? |
 | JSON Schema | Versioned machine-readable artifact contracts | Do `skill-audit-report.v1`, `doctor-report.v1`, and `run-audit.v1` need formal schemas beyond Python compatibility checks? |
 | SARIF/OASIS | Static-analysis result interchange for external tooling | Does skill audit need GitHub code-scanning or third-party static-analysis ingestion, or is repo-local JSON enough? |
+| DVC metrics / MLflow evaluation | Metrics and artifacts as structured outputs that can be compared without hiding the underlying evidence | Which counts are stable factual coverage signals, and which claims should stay out of the scorecard until semantic benchmarks exist? |
 
 ## Adoption Rules
 
@@ -83,3 +85,5 @@ to a current repo file before changing the harness.
 - JSON Schema: https://json-schema.org/
 - SARIF standard: https://docs.oasis-open.org/sarif/sarif/v2.1.0/sarif-v2.1.0.html
 - GitHub SARIF support for code scanning: https://docs.github.com/en/code-security/code-scanning/integrating-with-code-scanning/sarif-support-for-code-scanning
+- DVC metrics, plots, and parameters: https://dvc.org/doc/start/data-pipelines/metrics-parameters-plots
+- MLflow model evaluation: https://mlflow.org/docs/latest/ml/evaluation/

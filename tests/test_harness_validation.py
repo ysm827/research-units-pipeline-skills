@@ -673,6 +673,13 @@ def test_showcase_audit_current_repo_passes() -> None:
         "research_brief_fixture",
         "source_tutorial_fixture",
     }
+    assert {item["id"] for item in payload["scorecard"]} == {
+        "research_brief_fixture",
+        "source_tutorial_fixture",
+    }
+    assert all(item["status"] == "PASS" for item in payload["scorecard"])
+    assert all(item["present_files"] == item["tracked_files"] for item in payload["scorecard"])
+    assert all(item["present_markers"] == item["required_markers"] for item in payload["scorecard"])
 
 
 def test_showcase_audit_reports_placeholder_deliverable(tmp_path: Path) -> None:
@@ -691,6 +698,30 @@ def test_showcase_audit_reports_placeholder_deliverable(tmp_path: Path) -> None:
     assert "placeholder content" in finding["evidence"]
 
 
+def test_showcase_audit_scorecard_counts_missing_marker(tmp_path: Path) -> None:
+    _write_minimal_showcase_audit_repo(tmp_path)
+    excerpt = (
+        tmp_path
+        / showcase_audit.SOURCE_TUTORIAL_ROOT
+        / "evidence"
+        / "ARTIFACT_PACK_EXCERPT.tsv"
+    )
+    excerpt.write_text(
+        "category\tpath\texists\trole\n"
+        "target_artifact\toutput/TUTORIAL_EXCERPT.md\ttrue\tfinal tutorial excerpt\n",
+        encoding="utf-8",
+    )
+
+    payload = showcase_audit.build_showcase_audit(repo_root=tmp_path)
+
+    assert payload["verdict"] == "ATTENTION"
+    score = next(item for item in payload["scorecard"] if item["id"] == "source_tutorial_fixture")
+    assert score["status"] == "WARN"
+    assert score["present_files"] == score["tracked_files"]
+    assert score["present_markers"] < score["required_markers"]
+    assert "tracked files" in score["evidence_surface"]
+
+
 def test_showcase_audit_payload_validation_reports_shape_errors() -> None:
     issues = showcase_audit.validate_showcase_audit_payload(
         {
@@ -707,6 +738,18 @@ def test_showcase_audit_payload_validation_reports_shape_errors() -> None:
                     "next_action": None,
                 }
             ],
+            "scorecard": [
+                {
+                    "id": 1,
+                    "label": [],
+                    "status": "MAYBE",
+                    "tracked_files": -1,
+                    "present_files": "0",
+                    "required_markers": None,
+                    "present_markers": 0,
+                    "evidence_surface": {},
+                }
+            ],
         }
     )
 
@@ -715,6 +758,9 @@ def test_showcase_audit_payload_validation_reports_shape_errors() -> None:
     assert "`verdict` must be `PASS` or `ATTENTION`." in issues
     assert "`checks[0].status` must be `PASS` or `WARN`." in issues
     assert "`checks[0].next_action` must be a string." in issues
+    assert "`scorecard[0].status` must be `PASS` or `WARN`." in issues
+    assert "`scorecard[0].tracked_files` must be a non-negative integer." in issues
+    assert "`scorecard[0].present_files` must be a non-negative integer." in issues
 
 
 def test_reference_examples_with_ellipsis_are_informational_not_warnings(tmp_path: Path, monkeypatch) -> None:
