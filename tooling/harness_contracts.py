@@ -22,6 +22,7 @@ HARNESS_DOC_ENTRYPOINTS = {
     "docs/RUN_AUDIT_DIFF_SCHEMA.md": "run-audit diff schema reference",
     "docs/SHOWCASE_AUDIT_SCHEMA.md": "showcase audit schema reference",
     "docs/IMPROVEMENT_REPORT_SCHEMA.md": "improvement report schema reference",
+    "docs/ARTIFACT_PACK_SCHEMA.md": "artifact-pack schema reference",
     "docs/adr/README.md": "ADR index",
     "docs/adr/0001-separate-semantic-skills-from-deterministic-harness.md": "skills-vs-harness ADR",
     "docs/adr/0002-keep-run-audit-as-markdown-plus-json.md": "run-audit sidecar ADR",
@@ -30,6 +31,7 @@ HARNESS_DOC_ENTRYPOINTS = {
     "docs/adr/0005-keep-run-audit-diff-as-json-backed-comparison.md": "run-audit diff ADR",
     "docs/adr/0006-keep-showcase-audit-as-repo-local-json-contract.md": "showcase-audit JSON ADR",
     "docs/adr/0007-keep-improvement-report-as-a-local-repair-map.md": "improvement report ADR",
+    "docs/adr/0008-keep-artifact-pack-as-manifest-before-archive.md": "artifact-pack manifest ADR",
 }
 
 HARNESS_README_LINKS = (
@@ -53,6 +55,7 @@ HARNESS_README_LINKS = (
     "docs/RUN_AUDIT_DIFF_SCHEMA.md",
     "docs/SHOWCASE_AUDIT_SCHEMA.md",
     "docs/IMPROVEMENT_REPORT_SCHEMA.md",
+    "docs/ARTIFACT_PACK_SCHEMA.md",
     "docs/adr/",
 )
 
@@ -100,6 +103,13 @@ SCHEMA_REFERENCE_DOCS = {
         "producer": "tooling.harness.build_improvement_payload",
         "validator": "tooling.harness.validate_improvement_payload",
         "adr": "docs/adr/0007-keep-improvement-report-as-a-local-repair-map.md",
+    },
+    "docs/ARTIFACT_PACK_SCHEMA.md": {
+        "schema": "artifact-pack.v1",
+        "json_path": "output/ARTIFACT_PACK.json",
+        "producer": "tooling.harness.build_artifact_pack_payload",
+        "validator": "tooling.harness.validate_artifact_pack_payload",
+        "adr": "docs/adr/0008-keep-artifact-pack-as-manifest-before-archive.md",
     },
 }
 
@@ -209,6 +219,7 @@ ARTIFACT_INTERFACE_REQUIRED_MAPPINGS = (
     "Audit comparison",
     "Skill hygiene",
     "Showcase",
+    "Artifact pack",
     "Learning layer",
 )
 
@@ -248,6 +259,7 @@ READINESS_REQUIRED_DOCS = (
     "docs/RUN_AUDIT_DIFF_SCHEMA.md",
     "docs/SHOWCASE_AUDIT_SCHEMA.md",
     "docs/IMPROVEMENT_REPORT_SCHEMA.md",
+    "docs/ARTIFACT_PACK_SCHEMA.md",
     "docs/adr/README.md",
 )
 

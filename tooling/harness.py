@@ -98,6 +98,41 @@ IMPROVEMENT_REPORT_REQUIRED_KEYS = (
     "verdict",
     "exit_code",
 )
+ARTIFACT_PACK_SCHEMA = "artifact-pack.v1"
+ARTIFACT_PACK_REQUIRED_KEYS = (
+    "schema",
+    "generated_at",
+    "workspace",
+    "repo",
+    "pipeline",
+    "artifact_interface_standard",
+    "source_reports",
+    "artifacts",
+    "summary",
+    "verdict",
+    "exit_code",
+)
+ARTIFACT_PACK_LEDGER_PATHS = (
+    "PIPELINE.lock.md",
+    "GOAL.md",
+    "UNITS.csv",
+    "STATUS.md",
+    "CHECKPOINTS.md",
+    "DECISIONS.md",
+)
+ARTIFACT_PACK_HARNESS_REPORT_PATHS = (
+    "output/DOCTOR_REPORT.md",
+    "output/DOCTOR_REPORT.json",
+    "output/RUN_AUDIT.md",
+    "output/RUN_AUDIT.json",
+    "output/RUN_AUDIT_DIFF.md",
+    "output/RUN_AUDIT_DIFF.json",
+    "output/IMPROVEMENT_REPORT.md",
+    "output/IMPROVEMENT_REPORT.json",
+    "output/QUALITY_GATE.md",
+    "output/CONTRACT_REPORT.md",
+    "output/RUN_ERRORS.md",
+)
 
 
 @dataclass(frozen=True)
@@ -532,6 +567,73 @@ def validate_improvement_payload(payload: dict[str, Any]) -> list[str]:
             for key in required:
                 if not isinstance(suggestion.get(key), str):
                     issues.append(f"`suggestions[{idx}].{key}` must be a string")
+    return issues
+
+
+def validate_artifact_pack_payload(payload: dict[str, Any]) -> list[str]:
+    """Validate the stable shape future tooling can rely on for artifact-pack.v1."""
+    issues = _validate_payload_header(
+        payload,
+        expected_schema=ARTIFACT_PACK_SCHEMA,
+        required_keys=ARTIFACT_PACK_REQUIRED_KEYS,
+        string_keys=(
+            "generated_at",
+            "workspace",
+            "repo",
+            "pipeline",
+            "artifact_interface_standard",
+            "verdict",
+        ),
+        integer_keys=("exit_code",),
+    )
+    if not isinstance(payload, dict):
+        return issues
+
+    source_reports = _validate_object_field(payload, key="source_reports", issues=issues)
+    if source_reports is not None:
+        for name, record in source_reports.items():
+            if not isinstance(name, str):
+                issues.append("`source_reports` keys must be strings")
+            if not isinstance(record, dict):
+                issues.append(f"`source_reports.{name}` must be an object")
+                continue
+            for key in ("schema", "verdict"):
+                if not isinstance(record.get(key), str):
+                    issues.append(f"`source_reports.{name}.{key}` must be a string")
+            if not isinstance(record.get("exit_code"), int):
+                issues.append(f"`source_reports.{name}.exit_code` must be an integer")
+
+    artifacts = _validate_list_field(payload, key="artifacts", issues=issues)
+    if artifacts is not None:
+        for idx, record in enumerate(artifacts):
+            if not isinstance(record, dict):
+                issues.append(f"`artifacts[{idx}]` must be an object")
+                continue
+            for key in ("category", "path"):
+                if not isinstance(record.get(key), str):
+                    issues.append(f"`artifacts[{idx}].{key}` must be a string")
+            if not isinstance(record.get("exists"), bool):
+                issues.append(f"`artifacts[{idx}].exists` must be a boolean")
+
+    summary = _validate_object_field(payload, key="summary", issues=issues)
+    if summary is not None:
+        for key in ("total", "present", "missing"):
+            if not isinstance(summary.get(key), int):
+                issues.append(f"`summary.{key}` must be an integer")
+        by_category = summary.get("by_category")
+        if not isinstance(by_category, dict):
+            issues.append("`summary.by_category` must be an object")
+        else:
+            for category, counts in by_category.items():
+                if not isinstance(category, str):
+                    issues.append("`summary.by_category` keys must be strings")
+                if not isinstance(counts, dict):
+                    issues.append(f"`summary.by_category.{category}` must be an object")
+                    continue
+                for key in ("total", "present", "missing"):
+                    if not isinstance(counts.get(key), int):
+                        issues.append(f"`summary.by_category.{category}.{key}` must be an integer")
+
     return issues
 
 
@@ -1040,6 +1142,107 @@ def write_improvement_json(*, workspace: Path, payload: dict[str, Any]) -> Path:
     return path
 
 
+def build_artifact_pack_payload(*, workspace: Path, repo_root: Path) -> tuple[int, dict[str, Any]]:
+    doctor_exit, doctor_payload = build_doctor_payload(workspace=workspace, repo_root=repo_root)
+    audit_exit, audit_payload = build_run_audit_payload(workspace=workspace, repo_root=repo_root)
+    improvement_exit, improvement_payload = build_improvement_payload(workspace=workspace, repo_root=repo_root)
+
+    artifacts = _artifact_pack_records(
+        workspace=workspace,
+        audit_payload=audit_payload,
+    )
+    summary = _artifact_pack_summary(artifacts)
+    exit_code = 2 if doctor_exit or audit_exit or improvement_exit else 0
+    payload = {
+        "schema": ARTIFACT_PACK_SCHEMA,
+        "generated_at": now_iso_seconds(),
+        "workspace": str(workspace),
+        "repo": str(repo_root),
+        "pipeline": str(audit_payload.get("pipeline") or ""),
+        "artifact_interface_standard": "docs/ARTIFACT_INTERFACE_STANDARD.md",
+        "source_reports": {
+            "doctor": _source_report_record(doctor_payload),
+            "run_audit": _source_report_record(audit_payload),
+            "improvement_report": _source_report_record(improvement_payload),
+        },
+        "artifacts": artifacts,
+        "summary": summary,
+        "verdict": "PASS" if exit_code == 0 else "ATTENTION",
+        "exit_code": exit_code,
+    }
+    return exit_code, payload
+
+
+def render_artifact_pack_report(payload: dict[str, Any]) -> str:
+    lines = [
+        "# Artifact pack",
+        "",
+        f"- Workspace: `{payload.get('workspace')}`",
+        f"- Repo: `{payload.get('repo')}`",
+        f"- Generated at: `{payload.get('generated_at')}`",
+        f"- Pipeline: `{payload.get('pipeline')}`" if payload.get("pipeline") else "- Pipeline: unknown",
+        f"- Artifact interface standard: `{payload.get('artifact_interface_standard')}`",
+        f"- JSON sidecar: `output/ARTIFACT_PACK.json`",
+    ]
+
+    lines.extend(["", "## Source reports"])
+    for name, record in (payload.get("source_reports") or {}).items():
+        lines.append(
+            f"- `{name}`: {record.get('schema')} {record.get('verdict')} "
+            f"(exit {record.get('exit_code')})"
+        )
+
+    summary = payload.get("summary") or {}
+    lines.extend(
+        [
+            "",
+            "## Pack summary",
+            f"- Total artifacts indexed: {summary.get('total', 0)}",
+            f"- Present: {summary.get('present', 0)}",
+            f"- Missing: {summary.get('missing', 0)}",
+        ]
+    )
+
+    by_category = summary.get("by_category") or {}
+    if by_category:
+        lines.append("- By category:")
+        for category, counts in by_category.items():
+            lines.append(
+                f"  - `{category}`: {counts.get('present', 0)}/{counts.get('total', 0)} present"
+            )
+
+    lines.extend(["", "## Artifacts"])
+    grouped: dict[str, list[dict[str, Any]]] = {}
+    for record in payload.get("artifacts") or []:
+        category = str(record.get("category") or "uncategorized")
+        grouped.setdefault(category, []).append(record)
+    if not grouped:
+        lines.append("- No artifacts indexed")
+    else:
+        for category in sorted(grouped):
+            lines.extend(["", f"### {category}"])
+            for record in grouped[category]:
+                status = "present" if record.get("exists") else "missing"
+                details = _artifact_pack_record_details(record)
+                suffix = f" ({details})" if details else ""
+                lines.append(f"- `{record.get('path')}`: {status}{suffix}")
+
+    lines.extend(["", "## Pack verdict", f"- {payload.get('verdict') or 'ATTENTION'}"])
+    return "\n".join(lines).rstrip() + "\n"
+
+
+def write_artifact_pack_report(*, workspace: Path, report: str) -> Path:
+    path = workspace / "output" / "ARTIFACT_PACK.md"
+    atomic_write_text(path, report)
+    return path
+
+
+def write_artifact_pack_json(*, workspace: Path, payload: dict[str, Any]) -> Path:
+    path = workspace / "output" / "ARTIFACT_PACK.json"
+    atomic_write_text(path, json.dumps(payload, ensure_ascii=False, indent=2, sort_keys=True) + "\n")
+    return path
+
+
 def _improvement_suggestion_records(
     *,
     workspace: Path,
@@ -1209,6 +1412,105 @@ def _artifact_record(*, workspace: Path, relpath: str) -> dict[str, Any]:
             digest.update(chunk)
     record.update({"type": "file", "size": path.stat().st_size, "sha256": digest.hexdigest()})
     return record
+
+
+def _artifact_pack_records(*, workspace: Path, audit_payload: dict[str, Any]) -> list[dict[str, Any]]:
+    records: list[dict[str, Any]] = []
+    seen: set[tuple[str, str]] = set()
+
+    def add(category: str, relpath: str) -> None:
+        relpath = _strip_optional_marker(str(relpath or "").strip())
+        if not relpath:
+            return
+        key = (category, relpath)
+        if key in seen:
+            return
+        seen.add(key)
+        record = _artifact_record(workspace=workspace, relpath=relpath)
+        record["category"] = category
+        records.append(record)
+
+    for item in audit_payload.get("target_artifacts") or []:
+        if isinstance(item, dict):
+            add("target_artifact", str(item.get("path") or ""))
+
+    for relpath in _declared_unit_output_paths(workspace):
+        add("unit_output", relpath)
+
+    for relpath in ARTIFACT_PACK_LEDGER_PATHS:
+        add("run_ledger", relpath)
+
+    for relpath in ARTIFACT_PACK_HARNESS_REPORT_PATHS:
+        add("harness_report", relpath)
+
+    for manifest in _unit_manifest_records(workspace):
+        add("unit_manifest", str(manifest.get("_relpath") or ""))
+
+    return sorted(records, key=lambda item: (str(item.get("category") or ""), str(item.get("path") or "")))
+
+
+def _declared_unit_output_paths(workspace: Path) -> list[str]:
+    units_path = workspace / "UNITS.csv"
+    if not units_path.exists():
+        return []
+    try:
+        table = UnitsTable.load(units_path)
+    except Exception:
+        return []
+    relpaths: list[str] = []
+    seen: set[str] = set()
+    for row in table.rows:
+        for raw_output in parse_semicolon_list(row.get("outputs")):
+            relpath = _strip_optional_marker(raw_output)
+            if not relpath or relpath in seen:
+                continue
+            seen.add(relpath)
+            relpaths.append(relpath)
+    return relpaths
+
+
+def _artifact_pack_summary(records: list[dict[str, Any]]) -> dict[str, Any]:
+    by_category: dict[str, dict[str, int]] = {}
+    for record in records:
+        category = str(record.get("category") or "uncategorized")
+        counts = by_category.setdefault(category, {"total": 0, "present": 0, "missing": 0})
+        counts["total"] += 1
+        if record.get("exists"):
+            counts["present"] += 1
+        else:
+            counts["missing"] += 1
+    total = len(records)
+    present = sum(1 for record in records if record.get("exists"))
+    return {
+        "total": total,
+        "present": present,
+        "missing": total - present,
+        "by_category": {category: by_category[category] for category in sorted(by_category)},
+    }
+
+
+def _source_report_record(payload: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "schema": str(payload.get("schema") or ""),
+        "verdict": str(payload.get("verdict") or ""),
+        "exit_code": int(payload.get("exit_code") or 0),
+    }
+
+
+def _artifact_pack_record_details(record: dict[str, Any]) -> str:
+    if record.get("type") == "file":
+        size = record.get("size")
+        digest = str(record.get("sha256") or "")
+        digest_preview = digest[:12] if digest else ""
+        if isinstance(size, int) and digest_preview:
+            return f"{size} bytes, sha256 {digest_preview}"
+        if isinstance(size, int):
+            return f"{size} bytes"
+    if record.get("type") == "directory":
+        count = record.get("file_count")
+        if isinstance(count, int):
+            return f"{count} files"
+    return ""
 
 
 def _int_mapping_delta(before: dict[str, Any], after: dict[str, Any]) -> dict[str, int]:

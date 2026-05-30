@@ -103,14 +103,17 @@ The golden path is:
    workspace.
 5. `UNITS.csv` becomes the executable task graph.
 6. Skills perform semantic work and write artifacts into the execution ledger.
-7. Quality gates, doctor reports, run audits, manifests, and audit diffs expose
-   whether the run can continue or needs repair.
+7. Quality gates, doctor reports, run audits, manifests, audit diffs, and
+   artifact-pack manifests expose whether the run can continue, needs repair,
+   or is ready to hand off for review.
 8. `pipeline.py improve` can convert doctor/run-audit evidence into a local
    repair map.
-9. Final-deliverable defects are attributed to intermediate artifacts,
+9. `pipeline.py pack` can index final deliverables, intermediate artifacts,
+   ledgers, harness reports, and unit manifests as a deliverable-first handoff.
+10. Final-deliverable defects are attributed to intermediate artifacts,
    workflow protocol gaps, skill contracts, model-capability limits, or
    harness fallback gaps.
-10. Recurring lessons become project language, ADRs, pattern-register entries,
+11. Recurring lessons become project language, ADRs, pattern-register entries,
    validation rules, pipeline edits, or skill improvements.
 
 The current CLI commands are implementation adapters for this flow. They should

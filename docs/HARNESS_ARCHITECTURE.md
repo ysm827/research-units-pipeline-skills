@@ -145,6 +145,9 @@ The evidence loop supplies deterministic observation and comparison:
 - `pipeline.py improve --write` writes `IMPROVEMENT_REPORT.md` plus
   `IMPROVEMENT_REPORT.json`, mapping doctor/run-audit evidence to upstream
   interfaces, local repair surfaces, and validation commands.
+- `pipeline.py pack --write` writes `ARTIFACT_PACK.md` plus
+  `ARTIFACT_PACK.json`, indexing final deliverables, unit outputs, run ledgers,
+  harness reports, and unit manifests as a reviewable manifest.
 - `validate_repo.py` protects pipeline contracts, docs entrypoints, schema
   references, ADR format, pattern-register metadata, and terminology alignment.
 - `audit_skills.py` reports skill hygiene findings with stable JSON output,
@@ -166,6 +169,7 @@ Authoritative files:
 - `docs/RUN_AUDIT_DIFF_SCHEMA.md`
 - `docs/SHOWCASE_AUDIT_SCHEMA.md`
 - `docs/IMPROVEMENT_REPORT_SCHEMA.md`
+- `docs/ARTIFACT_PACK_SCHEMA.md`
 - `tests/test_harness_validation.py`
 
 The improvement loop is the project-specific answer to self-improvement. It
@@ -200,6 +204,7 @@ Schema references:
 - `docs/RUN_AUDIT_DIFF_SCHEMA.md`
 - `docs/SHOWCASE_AUDIT_SCHEMA.md`
 - `docs/IMPROVEMENT_REPORT_SCHEMA.md`
+- `docs/ARTIFACT_PACK_SCHEMA.md`
 
 ### Learning Layer
 

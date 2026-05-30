@@ -85,12 +85,13 @@ flowchart TB
     end
 
     subgraph evidence["Evidence Loop"]
-        cli["scripts/pipeline.py\nkickoff, init, run, doctor, audit, audit-diff"]
+        cli["scripts/pipeline.py\nkickoff, init, run, doctor, audit, audit-diff, improve, pack"]
         executor["tooling/executor.py\nstatus transitions, stale DOING recovery"]
         quality["tooling/quality_gate.py\nartifact checks"]
         doctor["doctor-report.v1\nworkspace diagnosis"]
         run_audit["run-audit.v1 + run-audit-diff.v1\nrun evidence and comparison"]
         improve_report["improvement-report.v1\nrepair map"]
+        artifact_pack["artifact-pack.v1\ndeliverable-first manifest"]
         tests["tests/ + local harness checks\nsmoke and regression checks"]
     end
 
@@ -135,9 +136,14 @@ flowchart TB
     outputs --> run_audit
     doctor --> improve_report
     run_audit --> improve_report
+    outputs --> artifact_pack
+    doctor --> artifact_pack
+    run_audit --> artifact_pack
+    improve_report --> artifact_pack
     doctor --> readiness
     run_audit --> readiness
     improve_report --> readiness
+    artifact_pack --> readiness
 
     validate --> pipeline
     validate --> units_template

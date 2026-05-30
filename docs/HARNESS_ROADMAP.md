@@ -79,8 +79,10 @@ Tracked artifacts:
 - `docs/HARNESS_READINESS_AUDIT.md`
 - `docs/SHOWCASE_AUDIT_SCHEMA.md`
 - `docs/IMPROVEMENT_REPORT_SCHEMA.md`
+- `docs/ARTIFACT_PACK_SCHEMA.md`
 - `docs/adr/0001-separate-semantic-skills-from-deterministic-harness.md`
 - `docs/adr/0007-keep-improvement-report-as-a-local-repair-map.md`
+- `docs/adr/0008-keep-artifact-pack-as-manifest-before-archive.md`
 - ADR index drift validation in `scripts/validate_repo.py`
 - README project reference links
 - `scripts/validate_repo.py` docs-entrypoint checks
@@ -295,8 +297,12 @@ Candidate changes:
 - Keep `docs/IMPROVEMENT_REPORT_SCHEMA.md` aligned with
   `improvement-report.v1` so future tools can consume the report without
   scraping Markdown.
-- Add artifact pack export so a reader can inspect the final deliverable,
-  intermediate reports, structured sidecars, decisions, and lineage together.
+- Keep `pipeline.py pack --write` as a manifest-first artifact pack so a reader
+  can inspect the final deliverable, intermediate reports, structured sidecars,
+  decisions, and lineage together without introducing archive export yet.
+- Keep `docs/ARTIFACT_PACK_SCHEMA.md` aligned with `artifact-pack.v1` so future
+  dashboards or archive exporters can consume the manifest without scraping
+  Markdown.
 - Add a run scorecard for B-side or lab settings: deliverable coverage,
   evidence depth, unresolved issues, human checkpoints, and comparison deltas.
 - Tighten high-frequency skill cards so natural-language routing can choose a
@@ -313,6 +319,8 @@ Acceptance:
   schema, validator, ADR, or project language.
 - Human-readable reports and machine-readable sidecars stay paired when both
   people and tools consume the artifact.
+- `pipeline.py pack --write` creates `ARTIFACT_PACK.md/json`, and
+  `artifact-pack.v1` validates through `validate_artifact_pack_payload`.
 - New artifact families declare producer, consumer, trace keys, repair
   surface, visibility, and validation before downstream reliance.
 - Product-facing examples remain deliverable-first and auditable through

@@ -7,12 +7,13 @@ change before the next run.
 
 The current repository already has the necessary substrate: workflow
 protocols, execution ledgers, human checkpoints, doctor reports, run audits,
-audit diffs, schema references, ADRs, a pattern register, and a roadmap. The
-improvement loop gives those pieces a stricter control model. The normative
-interface standard for intermediate artifacts lives in
+audit diffs, improvement reports, artifact-pack manifests, schema references,
+ADRs, a pattern register, and a roadmap. The improvement loop gives those
+pieces a stricter control model. The normative interface standard for
+intermediate artifacts lives in
 `docs/ARTIFACT_INTERFACE_STANDARD.md`.
 
-The first executable surface for this loop is:
+The first executable repair-map surface for this loop is:
 
 ```bash
 python scripts/pipeline.py improve --workspace workspaces/<name> --write
@@ -21,6 +22,16 @@ python scripts/pipeline.py improve --workspace workspaces/<name> --write
 It writes `output/IMPROVEMENT_REPORT.md` and
 `output/IMPROVEMENT_REPORT.json`, mapping doctor/run-audit evidence to an
 upstream interface, repair surface, and validation command.
+
+The first executable handoff surface is:
+
+```bash
+python scripts/pipeline.py pack --workspace workspaces/<name> --write
+```
+
+It writes `output/ARTIFACT_PACK.md` and `output/ARTIFACT_PACK.json`, indexing
+target artifacts, unit outputs, run ledgers, harness reports, and unit
+manifests so reviewers can start from the final deliverable and trace backward.
 
 ## Core Thesis
 
@@ -159,17 +170,18 @@ The same harness can serve different readers when the output shape is explicit:
 | Open-source evaluator | clear architecture and verifiable examples | showcase, system map, schema docs, local checks |
 | Maintainer | drift signals and upgrade path | validation, skill audit, readiness audit, roadmap |
 
-The current showcase and schema docs support this direction. The next product
-step should be better artifact packs and reader-first summaries, not a heavy
-runtime service.
+The current showcase, artifact-pack manifest, and schema docs support this
+direction. The next product step should be reader-first summaries and optional
+archive/export layers above the manifest, not a heavy runtime service.
 
 ## Feature Brainstorm
 
 These ideas are architecture-aligned because they strengthen existing repo
 surfaces instead of inventing a separate product:
 
-1. Artifact pack export: collect final deliverable, intermediate reports,
-   machine-readable sidecars, and decisions into a portable review package.
+1. Artifact pack manifest: current first version indexes final deliverables,
+   intermediate reports, machine-readable sidecars, decisions, and lineage
+   evidence before any portable archive/export layer is added.
 2. Run scorecard: summarize one workspace by deliverable coverage, evidence
    depth, unresolved issues, and human checkpoints.
 3. Improvement suggestion report: current first version maps doctor/run-audit
@@ -184,8 +196,8 @@ surfaces instead of inventing a separate product:
 7. Lightweight benchmark corpus: curate a few completed workspaces before
    adding a dashboard or external evaluator.
 
-The durable sequence is: artifact discipline first, improvement report second,
-autonomous policy loop last.
+The durable sequence is: artifact discipline first, improvement report and
+artifact-pack manifest second, autonomous policy loop last.
 
 ## Architecture Constraints
 

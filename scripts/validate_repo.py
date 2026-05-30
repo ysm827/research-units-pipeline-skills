@@ -453,6 +453,7 @@ def _validate_harness_docs(*, repo_root: Path, docs_dir: Path) -> list[Finding]:
                 "docs/RUN_AUDIT_DIFF_SCHEMA.md",
                 "docs/SHOWCASE_AUDIT_SCHEMA.md",
                 "docs/IMPROVEMENT_REPORT_SCHEMA.md",
+                "docs/ARTIFACT_PACK_SCHEMA.md",
             )
             if link not in text
         ]

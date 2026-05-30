@@ -11,15 +11,19 @@ sys.path.insert(0, str(REPO_ROOT))
 from tooling.common import atomic_write_text, copy_tree, resolve_pipeline_spec_path, today_iso
 from tooling.executor import run_one_unit
 from tooling.harness import (
+    build_artifact_pack_payload,
     build_doctor_payload,
     build_improvement_payload,
     build_run_audit_payload,
     build_run_audit_diff_payload,
     load_run_audit_payload,
+    render_artifact_pack_report,
     render_doctor_report,
     render_improvement_report,
     render_run_audit_diff_report,
     render_run_audit_report,
+    write_artifact_pack_json,
+    write_artifact_pack_report,
     write_doctor_json,
     write_doctor_report,
     write_improvement_json,
@@ -104,6 +108,14 @@ def main() -> int:
         "--write",
         action="store_true",
         help="Write improvement artifacts to output/IMPROVEMENT_REPORT.md and output/IMPROVEMENT_REPORT.json",
+    )
+
+    pack_p = sub.add_parser("pack", help="Create a reviewable artifact-pack manifest for a workspace")
+    pack_p.add_argument("--workspace", required=True, help="Workspace directory")
+    pack_p.add_argument(
+        "--write",
+        action="store_true",
+        help="Write artifact-pack artifacts to output/ARTIFACT_PACK.md and output/ARTIFACT_PACK.json",
     )
 
     audit_diff_p = sub.add_parser("audit-diff", help="Compare two RUN_AUDIT.json payloads")
@@ -299,6 +311,18 @@ def main() -> int:
         if args.write:
             report_path = write_improvement_report(workspace=workspace, report=report)
             json_path = write_improvement_json(workspace=workspace, payload=payload)
+            print(f"Wrote {report_path}")
+            print(f"Wrote {json_path}")
+        print(report, end="")
+        return exit_code
+
+    if args.cmd == "pack":
+        workspace = Path(args.workspace).resolve()
+        exit_code, payload = build_artifact_pack_payload(workspace=workspace, repo_root=repo_root)
+        report = render_artifact_pack_report(payload)
+        if args.write:
+            report_path = write_artifact_pack_report(workspace=workspace, report=report)
+            json_path = write_artifact_pack_json(workspace=workspace, payload=payload)
             print(f"Wrote {report_path}")
             print(f"Wrote {json_path}")
         print(report, end="")

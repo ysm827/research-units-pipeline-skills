@@ -291,6 +291,27 @@ Use this schema reference when writing tools that consume
 `output/IMPROVEMENT_REPORT.json`. Use `validate_improvement_payload` to check
 payload compatibility before relying on the fields.
 
+### Artifact pack
+
+The workspace manifest command:
+`python scripts/pipeline.py pack --workspace workspaces/<name> --write`.
+
+Use artifact pack for the deliverable-first handoff surface that indexes final
+target artifacts, declared unit outputs, run ledgers, harness reports, and
+unit manifests. Do not describe it as a zip export, publication mechanism,
+dashboard, or semantic evaluator.
+
+The human-readable report is `output/ARTIFACT_PACK.md`; the machine-readable
+sidecar is `output/ARTIFACT_PACK.json`.
+
+### Artifact pack schema
+
+The `artifact-pack.v1` field contract in `docs/ARTIFACT_PACK_SCHEMA.md`.
+
+Use this schema reference when writing tools that consume
+`output/ARTIFACT_PACK.json`. Use `validate_artifact_pack_payload` to check
+payload compatibility before relying on the fields.
+
 ### Remediation category
 
 A stable repair class attached to a doctor issue.
@@ -407,15 +428,6 @@ Use defect attribution before rewriting final prose. Common repair surfaces
 are skills, pipeline stages, unit templates, artifact contracts, schema docs,
 validators, doctor/audit checks, ADRs, and project language.
 
-### Artifact pack
-
-A future product-facing bundle that collects a final deliverable, important
-intermediate reports, machine-readable sidecars, decisions, and lineage
-evidence for review.
-
-Use artifact pack for exported review material. Do not use it for the entire
-workspace or for private developer-local goal logs.
-
 ### Run audit diff
 
 The run comparison command:
@@ -482,7 +494,8 @@ sidecar's stable shape before future tooling relies on it.
 
 Current checks include `validate_skill_audit_payload`,
 `validate_doctor_payload`, `validate_run_audit_payload`, and
-`validate_run_audit_diff_payload`. The showcase audit also exposes
+`validate_run_audit_diff_payload`, `validate_improvement_payload`, and
+`validate_artifact_pack_payload`. The showcase audit also exposes
 `validate_showcase_audit_payload` because its JSON output is a repo-level
 exhibit contract. Workspace JSON sidecars share common type-checking helpers
 inside `tooling/harness.py`; skill audit JSON owns its check in

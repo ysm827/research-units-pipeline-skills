@@ -26,7 +26,8 @@ def _write_minimal_harness_docs(repo_root: Path) -> None:
         "docs/HARNESS_IMPROVEMENT_LOOP.md, docs/ARTIFACT_INTERFACE_STANDARD.md, "
         "docs/SKILL_AUDIT_SCHEMA.md, docs/DOCTOR_REPORT_SCHEMA.md, "
         "docs/RUN_AUDIT_SCHEMA.md, docs/RUN_AUDIT_DIFF_SCHEMA.md, "
-        "docs/SHOWCASE_AUDIT_SCHEMA.md, and docs/IMPROVEMENT_REPORT_SCHEMA.md.\n",
+        "docs/SHOWCASE_AUDIT_SCHEMA.md, docs/IMPROVEMENT_REPORT_SCHEMA.md, "
+        "and docs/ARTIFACT_PACK_SCHEMA.md.\n",
         encoding="utf-8",
     )
     (docs_dir / "HARNESS_OPERATING_MODEL.md").write_text("# Harness Operating Model\n", encoding="utf-8")
@@ -110,6 +111,10 @@ def _write_minimal_harness_docs(repo_root: Path) -> None:
     )
     (docs_dir / "IMPROVEMENT_REPORT_SCHEMA.md").write_text(
         "\n".join(validate_repo.SCHEMA_REFERENCE_DOCS["docs/IMPROVEMENT_REPORT_SCHEMA.md"].values()) + "\n",
+        encoding="utf-8",
+    )
+    (docs_dir / "ARTIFACT_PACK_SCHEMA.md").write_text(
+        "\n".join(validate_repo.SCHEMA_REFERENCE_DOCS["docs/ARTIFACT_PACK_SCHEMA.md"].values()) + "\n",
         encoding="utf-8",
     )
     adr_files = [
@@ -343,7 +348,8 @@ def test_harness_docs_validation_reports_missing_readme_links(tmp_path: Path) ->
             "docs/HARNESS_READINESS_AUDIT.md, docs/PATTERN_REGISTER.md, "
             "docs/SKILL_AUDIT_SCHEMA.md, docs/DOCTOR_REPORT_SCHEMA.md, "
             "docs/RUN_AUDIT_SCHEMA.md, docs/RUN_AUDIT_DIFF_SCHEMA.md, "
-            "docs/SHOWCASE_AUDIT_SCHEMA.md, docs/IMPROVEMENT_REPORT_SCHEMA.md, docs/adr/.",
+            "docs/SHOWCASE_AUDIT_SCHEMA.md, docs/IMPROVEMENT_REPORT_SCHEMA.md, "
+            "docs/ARTIFACT_PACK_SCHEMA.md, docs/adr/.",
         )
     ]
 
@@ -410,7 +416,7 @@ def test_harness_docs_validation_reports_missing_artifact_interface_metadata(tmp
             "``machine_view``, ``trace_keys``, ``repair_surface``, ``validation``, ``visibility``; "
             "format vocabulary `Markdown`, `CSV`, `TSV`, `YAML`, `Versioned JSON`, `PDF`, `TeX`, `SVG`; "
             "current repo mappings `Workflow protocol`, `Execution ledger`, `Workspace diagnosis`, "
-            "`Run audit`, `Audit comparison`, `Skill hygiene`, `Showcase`, `Learning layer`.",
+            "`Run audit`, `Audit comparison`, `Skill hygiene`, `Showcase`, `Artifact pack`, `Learning layer`.",
         )
     ]
 

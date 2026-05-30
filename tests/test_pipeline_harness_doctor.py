@@ -8,6 +8,7 @@ from pathlib import Path
 
 from tooling.executor import run_one_unit
 from tooling.harness import (
+    validate_artifact_pack_payload,
     validate_doctor_payload,
     validate_improvement_payload,
     validate_run_audit_diff_payload,
@@ -473,6 +474,92 @@ def test_improvement_payload_validator_reports_shape_errors() -> None:
     assert "`source_reports.doctor.exit_code` must be an integer" in issues
     assert "`suggestions[0].observed_problem` must be a string" in issues
     assert "`suggestions[0].repair_surface` must be a string" in issues
+
+
+def test_pack_writes_reviewable_artifact_manifest(tmp_path: Path) -> None:
+    workspace = tmp_path / "ws"
+    spec = PipelineSpec.load(REPO_ROOT / "pipelines" / "research-brief.pipeline.md")
+    write_units(
+        workspace / "UNITS.csv",
+        [
+            {
+                "unit_id": "U001",
+                "title": "Snapshot",
+                "skill": "snapshot-writer",
+                "owner": "CODEX",
+                "outputs": "output/SNAPSHOT.md",
+                "status": "DONE",
+            }
+        ],
+    )
+    (workspace / "PIPELINE.lock.md").write_text(
+        "pipeline: pipelines/research-brief.pipeline.md\n"
+        "units_template: templates/UNITS.research-brief.csv\n"
+        "locked_at: 2026-05-30\n",
+        encoding="utf-8",
+    )
+    (workspace / "GOAL.md").write_text("# Goal\n\nDemo\n", encoding="utf-8")
+    (workspace / "STATUS.md").write_text("# Status\n\n## Current checkpoint\n- `C3`\n", encoding="utf-8")
+    (workspace / "CHECKPOINTS.md").write_text("# Checkpoints\n", encoding="utf-8")
+    (workspace / "DECISIONS.md").write_text("# Decisions\n", encoding="utf-8")
+    for relpath in spec.target_artifacts:
+        path = workspace / relpath
+        if path.exists():
+            continue
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(f"{relpath}\n", encoding="utf-8")
+    write_unit_manifest(
+        workspace=workspace,
+        unit_id="U001",
+        skill="snapshot-writer",
+        outputs=["output/SNAPSHOT.md"],
+        exit_code=0,
+        status="DONE",
+    )
+
+    result = run_command("scripts/pipeline.py", "pack", "--workspace", str(workspace), "--write")
+
+    report_path = workspace / "output" / "ARTIFACT_PACK.md"
+    json_path = workspace / "output" / "ARTIFACT_PACK.json"
+    assert result.returncode == 0, result.stdout
+    assert report_path.exists()
+    assert json_path.exists()
+    assert "Artifact pack" in result.stdout
+    assert "target_artifact" in result.stdout
+    assert "run_ledger" in result.stdout
+    assert "unit_manifest" in result.stdout
+    payload = json.loads(json_path.read_text(encoding="utf-8"))
+    assert payload["schema"] == "artifact-pack.v1"
+    assert payload["verdict"] == "PASS"
+    assert payload["source_reports"]["run_audit"]["schema"] == "run-audit.v1"
+    assert payload["summary"]["by_category"]["target_artifact"]["missing"] == 0
+    categories = {record["category"] for record in payload["artifacts"]}
+    assert {"target_artifact", "unit_output", "run_ledger", "harness_report", "unit_manifest"}.issubset(categories)
+    assert validate_artifact_pack_payload(payload) == []
+
+
+def test_artifact_pack_payload_validator_reports_shape_errors() -> None:
+    payload = {
+        "schema": "artifact-pack.v2",
+        "generated_at": "2026-05-30T00:00:00",
+        "workspace": "/tmp/ws",
+        "repo": "/tmp/repo",
+        "pipeline": "research-brief",
+        "artifact_interface_standard": "docs/ARTIFACT_INTERFACE_STANDARD.md",
+        "source_reports": {"run_audit": {"schema": "run-audit.v1", "verdict": "PASS", "exit_code": "0"}},
+        "artifacts": [{"category": "target_artifact", "path": "output/SNAPSHOT.md", "exists": "yes"}],
+        "summary": {"total": 1, "present": "1", "missing": 0, "by_category": {"target_artifact": {"total": 1}}},
+        "verdict": "PASS",
+        "exit_code": 0,
+    }
+
+    issues = validate_artifact_pack_payload(payload)
+
+    assert "`schema` must be `artifact-pack.v1`" in issues
+    assert "`source_reports.run_audit.exit_code` must be an integer" in issues
+    assert "`artifacts[0].exists` must be a boolean" in issues
+    assert "`summary.present` must be an integer" in issues
+    assert "`summary.by_category.target_artifact.present` must be an integer" in issues
 
 
 def test_audit_diff_reports_improved_target_artifact_coverage(tmp_path: Path) -> None:
