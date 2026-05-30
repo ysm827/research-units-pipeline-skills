@@ -378,6 +378,7 @@ def _artifact_pack_excerpt_tsv_issues(*, full_path: Path, rel_path: str) -> list
 
     header = tuple(lines[0].split("\t"))
     issues: list[str] = []
+    records: list[tuple[str, str, str, str]] = []
     if header != ARTIFACT_PACK_EXCERPT_TSV_HEADER:
         issues.append(
             f"`{rel_path}` has non-canonical header "
@@ -400,7 +401,49 @@ def _artifact_pack_excerpt_tsv_issues(*, full_path: Path, rel_path: str) -> list
             issues.append(f"`{rel_path}` line {line_no} has non-boolean exists value `{exists}`")
         if not role:
             issues.append(f"`{rel_path}` line {line_no} has empty role")
+        if category and path and exists in {"true", "false"} and role:
+            records.append((category, path, exists, role))
+
+    markdown_path = full_path.with_suffix(".md")
+    if markdown_path.exists():
+        markdown_rel = str(Path(rel_path).with_suffix(".md"))
+        markdown_records = _artifact_pack_excerpt_markdown_records(_read_text(markdown_path))
+        if records and not markdown_records:
+            issues.append(f"`{markdown_rel}` has no parseable artifact-pack excerpt table rows")
+        missing_in_markdown = [record for record in records if record not in markdown_records]
+        missing_in_tsv = [record for record in markdown_records if record not in records]
+        for category, path, exists, role in missing_in_markdown:
+            issues.append(
+                f"`{markdown_rel}` is missing TSV row `{category}\\t{path}\\t{exists}\\t{role}`"
+            )
+        for category, path, exists, role in missing_in_tsv:
+            issues.append(
+                f"`{rel_path}` is missing Markdown row `{category}\\t{path}\\t{exists}\\t{role}`"
+            )
     return issues
+
+
+def _artifact_pack_excerpt_markdown_records(text: str) -> set[tuple[str, str, str, str]]:
+    records: set[tuple[str, str, str, str]] = set()
+    pattern = re.compile(
+        r"^\|\s*`(?P<category>[^`]+)`\s*"
+        r"\|\s*`(?P<path>[^`]+)`\s*"
+        r"\|\s*(?P<exists>true|false)\s*"
+        r"\|\s*(?P<role>[^|]+?)\s*\|$"
+    )
+    for line in text.splitlines():
+        match = pattern.match(line.strip())
+        if not match:
+            continue
+        records.add(
+            (
+                match.group("category").strip(),
+                match.group("path").strip(),
+                match.group("exists").strip(),
+                match.group("role").strip(),
+            )
+        )
+    return records
 
 
 def _as_terms(value: object) -> tuple[str, ...]:

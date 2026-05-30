@@ -56,9 +56,9 @@ the visual lineage asset still contains the expected fixture labels, that the
 fixture protocol files exist, and that the tracked deliverables are not
 placeholder-only examples. For artifact-pack excerpt TSV files, it also checks
 the canonical `category	path	exists	role` header, four-column rows, and
-`true` / `false` values in the `exists` column. It is intentionally narrower
-than a live run audit: it does not rerun retrieval, compile LaTeX, or judge
-semantic quality.
+`true` / `false` values in the `exists` column, then compares the rows against
+the paired Markdown excerpt table. It is intentionally narrower than a live run
+audit: it does not rerun retrieval, compile LaTeX, or judge semantic quality.
 
 The same audit also emits a conservative fixture scorecard. The scorecard is
 not a benchmark. It only counts whether each portable fixture exposes its

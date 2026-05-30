@@ -28,7 +28,8 @@ The schema describes portable showcase fixture health. It does not rerun live
 retrieval, compile LaTeX, execute units, or judge semantic research quality.
 For tracked `ARTIFACT_PACK_EXCERPT.tsv` files, the producer validates the
 canonical `category	path	exists	role` header, row width, non-empty category,
-path, and role cells, and boolean `true` / `false` values for `exists`.
+path, and role cells, boolean `true` / `false` values for `exists`, and row
+consistency with the paired Markdown excerpt table.
 
 ## Top-Level Fields
 

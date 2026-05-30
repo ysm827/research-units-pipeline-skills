@@ -211,7 +211,13 @@ def _write_minimal_showcase_audit_repo(repo_root: Path) -> None:
         encoding="utf-8",
     )
     (research_root / "output" / "ARTIFACT_PACK_EXCERPT.md").write_text(
-        "# Artifact Pack Excerpt\n\nartifact-pack.v1\n\ntarget_artifact\nrun_ledger\nharness_report\n",
+        "# Artifact Pack Excerpt\n\n"
+        "artifact-pack.v1\n\n"
+        "target_artifact\nrun_ledger\nharness_report\n\n"
+        "| Category | Path | Exists | Role |\n"
+        "|---|---|---|---|\n"
+        "| `target_artifact` | `output/SNAPSHOT.md` | true | final deliverable |\n"
+        "| `harness_report` | `output/CONTRACT_REPORT.md` | true | contract evidence |\n",
         encoding="utf-8",
     )
     (research_root / "output" / "ARTIFACT_PACK_EXCERPT.tsv").write_text(
@@ -247,7 +253,13 @@ def _write_minimal_showcase_audit_repo(repo_root: Path) -> None:
         encoding="utf-8",
     )
     (tutorial_root / "evidence" / "ARTIFACT_PACK_EXCERPT.md").write_text(
-        "# Artifact Pack Excerpt\n\nartifact-pack.v1\n\ntarget_artifact\nunit_output\nharness_report\n",
+        "# Artifact Pack Excerpt\n\n"
+        "artifact-pack.v1\n\n"
+        "target_artifact\nunit_output\nharness_report\n\n"
+        "| Category | Path | Exists | Role |\n"
+        "|---|---|---|---|\n"
+        "| `target_artifact` | `output/TUTORIAL_EXCERPT.md` | true | final tutorial excerpt |\n"
+        "| `harness_report` | `evidence/RUN_AUDIT_SUMMARY.md` | true | run audit evidence |\n",
         encoding="utf-8",
     )
     (tutorial_root / "evidence" / "ARTIFACT_PACK_EXCERPT.tsv").write_text(
@@ -744,6 +756,32 @@ def test_showcase_audit_reports_malformed_artifact_pack_excerpt_tsv(tmp_path: Pa
     assert finding["status"] == "WARN"
     assert "non-boolean exists value `yes`" in finding["evidence"]
     assert "line 3 has 3 column(s); expected 4" in finding["evidence"]
+
+
+def test_showcase_audit_reports_artifact_pack_excerpt_markdown_tsv_drift(tmp_path: Path) -> None:
+    _write_minimal_showcase_audit_repo(tmp_path)
+    excerpt = (
+        tmp_path
+        / showcase_audit.RESEARCH_BRIEF_ROOT
+        / "output"
+        / "ARTIFACT_PACK_EXCERPT.md"
+    )
+    excerpt.write_text(
+        "# Artifact Pack Excerpt\n\n"
+        "artifact-pack.v1 target_artifact run_ledger harness_report\n\n"
+        "| Category | Path | Exists | Role |\n"
+        "|---|---|---|---|\n"
+        "| `harness_report` | `output/CONTRACT_REPORT.md` | true | contract evidence |\n",
+        encoding="utf-8",
+    )
+
+    payload = showcase_audit.build_showcase_audit(repo_root=tmp_path)
+
+    assert payload["verdict"] == "ATTENTION"
+    finding = next(item for item in payload["checks"] if item["id"] == "research_brief_fixture")
+    assert finding["status"] == "WARN"
+    assert "ARTIFACT_PACK_EXCERPT.md` is missing TSV row" in finding["evidence"]
+    assert "target_artifact\\toutput/SNAPSHOT.md\\ttrue\\tfinal deliverable" in finding["evidence"]
 
 
 def test_showcase_audit_payload_validation_reports_shape_errors() -> None:
