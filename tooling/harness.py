@@ -1231,6 +1231,49 @@ def render_artifact_pack_report(payload: dict[str, Any]) -> str:
     return "\n".join(lines).rstrip() + "\n"
 
 
+def render_artifact_pack_excerpt_markdown(payload: dict[str, Any]) -> str:
+    lines = [
+        "# Artifact Pack Excerpt",
+        "",
+        "This portable excerpt is derived from an `artifact-pack.v1` handoff manifest. "
+        "It keeps workspace-relative paths so the table can be copied into tracked "
+        "fixtures or handoff notes without embedding local absolute paths.",
+        "",
+        "It is not a full `output/ARTIFACT_PACK.json` sidecar. The full JSON manifest "
+        "remains the compatibility contract; this excerpt preserves the reader-facing "
+        "shape: start from target artifacts, then trace backward through unit outputs, "
+        "run ledgers, harness reports, and unit manifests.",
+        "",
+        "| Category | Path | Exists | Role |",
+        "|---|---|---|---|",
+    ]
+    for record in _artifact_pack_excerpt_records(payload):
+        lines.append(
+            "| `{category}` | `{path}` | {exists} | {role} |".format(
+                category=record["category"],
+                path=record["path"],
+                exists="true" if record["exists"] else "false",
+                role=record["role"],
+            )
+        )
+    lines.extend(["", f"Handoff verdict for this excerpt: `{payload.get('verdict') or 'ATTENTION'}`."])
+    return "\n".join(lines).rstrip() + "\n"
+
+
+def render_artifact_pack_excerpt_tsv(payload: dict[str, Any]) -> str:
+    lines = ["category\tpath\texists\trole"]
+    for record in _artifact_pack_excerpt_records(payload):
+        lines.append(
+            "{category}\t{path}\t{exists}\t{role}".format(
+                category=record["category"],
+                path=record["path"],
+                exists="true" if record["exists"] else "false",
+                role=record["role"],
+            )
+        )
+    return "\n".join(lines) + "\n"
+
+
 def write_artifact_pack_report(*, workspace: Path, report: str) -> Path:
     path = workspace / "output" / "ARTIFACT_PACK.md"
     atomic_write_text(path, report)
@@ -1240,6 +1283,18 @@ def write_artifact_pack_report(*, workspace: Path, report: str) -> Path:
 def write_artifact_pack_json(*, workspace: Path, payload: dict[str, Any]) -> Path:
     path = workspace / "output" / "ARTIFACT_PACK.json"
     atomic_write_text(path, json.dumps(payload, ensure_ascii=False, indent=2, sort_keys=True) + "\n")
+    return path
+
+
+def write_artifact_pack_excerpt_markdown(*, workspace: Path, excerpt: str) -> Path:
+    path = workspace / "output" / "ARTIFACT_PACK_EXCERPT.md"
+    atomic_write_text(path, excerpt)
+    return path
+
+
+def write_artifact_pack_excerpt_tsv(*, workspace: Path, excerpt: str) -> Path:
+    path = workspace / "output" / "ARTIFACT_PACK_EXCERPT.tsv"
+    atomic_write_text(path, excerpt)
     return path
 
 
@@ -1511,6 +1566,36 @@ def _artifact_pack_record_details(record: dict[str, Any]) -> str:
         if isinstance(count, int):
             return f"{count} files"
     return ""
+
+
+def _artifact_pack_excerpt_records(payload: dict[str, Any]) -> list[dict[str, Any]]:
+    records: list[dict[str, Any]] = []
+    for item in payload.get("artifacts") or []:
+        if not isinstance(item, dict):
+            continue
+        category = str(item.get("category") or "").strip()
+        path = str(item.get("path") or "").strip()
+        if not category or not path:
+            continue
+        records.append(
+            {
+                "category": category,
+                "path": path,
+                "exists": bool(item.get("exists")),
+                "role": _artifact_pack_excerpt_role(category),
+            }
+        )
+    return sorted(records, key=lambda record: (record["category"], record["path"]))
+
+
+def _artifact_pack_excerpt_role(category: str) -> str:
+    return {
+        "target_artifact": "final deliverable or declared target artifact",
+        "unit_output": "declared unit output",
+        "run_ledger": "workspace run ledger",
+        "harness_report": "harness evidence report",
+        "unit_manifest": "per-unit output manifest",
+    }.get(category, "indexed artifact")
 
 
 def _int_mapping_delta(before: dict[str, Any], after: dict[str, Any]) -> dict[str, int]:

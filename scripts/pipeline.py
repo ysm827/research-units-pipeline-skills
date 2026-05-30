@@ -18,12 +18,16 @@ from tooling.harness import (
     build_run_audit_diff_payload,
     load_run_audit_payload,
     render_artifact_pack_report,
+    render_artifact_pack_excerpt_markdown,
+    render_artifact_pack_excerpt_tsv,
     render_doctor_report,
     render_improvement_report,
     render_run_audit_diff_report,
     render_run_audit_report,
     write_artifact_pack_json,
     write_artifact_pack_report,
+    write_artifact_pack_excerpt_markdown,
+    write_artifact_pack_excerpt_tsv,
     write_doctor_json,
     write_doctor_report,
     write_improvement_json,
@@ -116,6 +120,11 @@ def main() -> int:
         "--write",
         action="store_true",
         help="Write artifact-pack artifacts to output/ARTIFACT_PACK.md and output/ARTIFACT_PACK.json",
+    )
+    pack_p.add_argument(
+        "--write-excerpt",
+        action="store_true",
+        help="Write portable excerpt artifacts to output/ARTIFACT_PACK_EXCERPT.md and output/ARTIFACT_PACK_EXCERPT.tsv",
     )
 
     audit_diff_p = sub.add_parser("audit-diff", help="Compare two RUN_AUDIT.json payloads")
@@ -325,6 +334,17 @@ def main() -> int:
             json_path = write_artifact_pack_json(workspace=workspace, payload=payload)
             print(f"Wrote {report_path}")
             print(f"Wrote {json_path}")
+        if args.write_excerpt:
+            excerpt_md = write_artifact_pack_excerpt_markdown(
+                workspace=workspace,
+                excerpt=render_artifact_pack_excerpt_markdown(payload),
+            )
+            excerpt_tsv = write_artifact_pack_excerpt_tsv(
+                workspace=workspace,
+                excerpt=render_artifact_pack_excerpt_tsv(payload),
+            )
+            print(f"Wrote {excerpt_md}")
+            print(f"Wrote {excerpt_tsv}")
         print(report, end="")
         return exit_code
 

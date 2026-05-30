@@ -181,7 +181,7 @@ before the run can be treated as complete.
 Command:
 
 ```bash
-python scripts/pipeline.py pack --workspace workspaces/harness-demo-research-brief --write
+python scripts/pipeline.py pack --workspace workspaces/harness-demo-research-brief --write --write-excerpt
 ```
 
 For an incomplete workspace, the pack can also return `ATTENTION`. The point is
@@ -202,6 +202,8 @@ The command writes:
 ```text
 output/ARTIFACT_PACK.md
 output/ARTIFACT_PACK.json
+output/ARTIFACT_PACK_EXCERPT.md
+output/ARTIFACT_PACK_EXCERPT.tsv
 ```
 
 This manifest is the file-first handoff surface. It indexes what exists, what

@@ -517,17 +517,29 @@ def test_pack_writes_reviewable_artifact_manifest(tmp_path: Path) -> None:
         status="DONE",
     )
 
-    result = run_command("scripts/pipeline.py", "pack", "--workspace", str(workspace), "--write")
+    result = run_command(
+        "scripts/pipeline.py",
+        "pack",
+        "--workspace",
+        str(workspace),
+        "--write",
+        "--write-excerpt",
+    )
 
     report_path = workspace / "output" / "ARTIFACT_PACK.md"
     json_path = workspace / "output" / "ARTIFACT_PACK.json"
+    excerpt_md_path = workspace / "output" / "ARTIFACT_PACK_EXCERPT.md"
+    excerpt_tsv_path = workspace / "output" / "ARTIFACT_PACK_EXCERPT.tsv"
     assert result.returncode == 0, result.stdout
     assert report_path.exists()
     assert json_path.exists()
+    assert excerpt_md_path.exists()
+    assert excerpt_tsv_path.exists()
     assert "Artifact pack" in result.stdout
     assert "target_artifact" in result.stdout
     assert "run_ledger" in result.stdout
     assert "unit_manifest" in result.stdout
+    assert "ARTIFACT_PACK_EXCERPT.md" in result.stdout
     payload = json.loads(json_path.read_text(encoding="utf-8"))
     assert payload["schema"] == "artifact-pack.v1"
     assert payload["verdict"] == "PASS"
@@ -535,6 +547,13 @@ def test_pack_writes_reviewable_artifact_manifest(tmp_path: Path) -> None:
     assert payload["summary"]["by_category"]["target_artifact"]["missing"] == 0
     categories = {record["category"] for record in payload["artifacts"]}
     assert {"target_artifact", "unit_output", "run_ledger", "harness_report", "unit_manifest"}.issubset(categories)
+    excerpt_md = excerpt_md_path.read_text(encoding="utf-8")
+    excerpt_tsv = excerpt_tsv_path.read_text(encoding="utf-8")
+    assert "# Artifact Pack Excerpt" in excerpt_md
+    assert "artifact-pack.v1" in excerpt_md
+    assert "| `target_artifact` | `output/SNAPSHOT.md` | true | final deliverable or declared target artifact |" in excerpt_md
+    assert "category\tpath\texists\trole" in excerpt_tsv
+    assert "target_artifact\toutput/SNAPSHOT.md\ttrue\tfinal deliverable or declared target artifact" in excerpt_tsv
     assert validate_artifact_pack_payload(payload) == []
 
 

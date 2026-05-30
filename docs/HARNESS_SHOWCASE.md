@@ -99,7 +99,9 @@ Then trace backward:
 This fixture is intentionally small. It demonstrates artifact lineage, not a
 full live retrieval run. The artifact-pack excerpt uses repo-relative paths so
 it can be tracked under `example/` without embedding a developer's local
-workspace path.
+workspace path. Future refreshed excerpts should be generated from a live
+workspace with `pipeline.py pack --write-excerpt`, then curated into the
+tracked fixture when appropriate.
 
 ## Tracked Source-Tutorial Fixture
 
@@ -142,7 +144,9 @@ fixture: source set, tutorial spec, teaching modules, article prose, article
 PDF, Beamer slides, self-check, contract report, and run audit.
 Its artifact-pack excerpt uses the same relative-path pattern as the compact
 research-brief fixture, but covers richer delivery surfaces and separate
-human-readable versus model-readable evidence.
+human-readable versus model-readable evidence. Future refreshed excerpts should
+use `pipeline.py pack --write-excerpt` as the source before curating
+fixture-specific role labels.
 
 ## Completed Local Workspace Exhibit
 

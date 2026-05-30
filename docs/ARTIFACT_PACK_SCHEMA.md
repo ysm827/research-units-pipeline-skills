@@ -9,10 +9,22 @@ python scripts/pipeline.py pack --workspace workspaces/<name> --write
 The human report is `output/ARTIFACT_PACK.md`. The machine-readable sidecar is
 `output/ARTIFACT_PACK.json`.
 
+For reader-facing fixtures or handoff notes, the same command can also write a
+portable excerpt:
+
+```bash
+python scripts/pipeline.py pack --workspace workspaces/<name> --write-excerpt
+```
+
+This creates `output/ARTIFACT_PACK_EXCERPT.md` and
+`output/ARTIFACT_PACK_EXCERPT.tsv` with workspace-relative paths only.
+
 ## Ownership
 
 - Producer: `tooling.harness.build_artifact_pack_payload`
 - Writer: `tooling.harness.write_artifact_pack_json`
+- Excerpt writers: `tooling.harness.write_artifact_pack_excerpt_markdown` and
+  `tooling.harness.write_artifact_pack_excerpt_tsv`
 - Compatibility check: `tooling.harness.validate_artifact_pack_payload`
 - Architecture decision: `docs/adr/0008-keep-artifact-pack-as-manifest-before-archive.md`
 
@@ -98,3 +110,7 @@ Do not treat the artifact pack as a packaging runtime yet. It is the
 deliverable-first manifest that lets a reviewer or future model start from
 final outputs, then trace backward through run ledgers, harness reports, and
 unit manifests.
+
+The excerpt files are a derived presentation surface, not a new schema. They
+exist to reduce manual drift in tracked fixtures and handoff notes. Consumers
+that need compatibility guarantees should read `output/ARTIFACT_PACK.json`.
