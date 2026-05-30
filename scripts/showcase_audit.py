@@ -148,6 +148,7 @@ def build_showcase_audit(*, repo_root: Path) -> dict[str, object]:
         _check_showcase_doc(repo_root=repo_root),
         _check_lineage_assets(repo_root=repo_root),
         _check_pipeline_protocols(repo_root=repo_root),
+        _check_fixture_contracts(),
     ]
     checks.extend(_check_fixture_group(repo_root=repo_root, group=group) for group in FIXTURE_GROUPS)
     scorecard = [_score_fixture_group(repo_root=repo_root, group=group) for group in FIXTURE_GROUPS]
@@ -295,9 +296,58 @@ def _check_pipeline_protocols(*, repo_root: Path) -> ShowcaseCheck:
     )
 
 
+def _check_fixture_contracts() -> ShowcaseCheck:
+    issues: list[str] = []
+    ids: set[str] = set()
+    roots: set[str] = set()
+
+    for group in FIXTURE_GROUPS:
+        group_id = str(group["id"])
+        root = str(group["root"])
+        if group_id in ids:
+            issues.append(f"duplicate fixture group id `{group_id}`")
+        ids.add(group_id)
+        if root in roots:
+            issues.append(f"duplicate fixture root `{root}`")
+        roots.add(root)
+
+        tracked_paths = _fixture_paths_for_root(root)
+        if not tracked_paths:
+            issues.append(f"`{group_id}` root `{root}` has no tracked fixture paths")
+
+        referenced_paths = [str(path) for path in group.get("deliverables", ())]
+        referenced_paths.extend(str(path) for path in dict(group.get("required_terms", {})))
+        for rel_path in referenced_paths:
+            full_path = f"{root}/{rel_path}"
+            if full_path not in HARNESS_SHOWCASE_FIXTURE_PATHS:
+                issues.append(f"`{group_id}` references `{full_path}` outside HARNESS_SHOWCASE_FIXTURE_PATHS")
+
+    unmatched = [
+        path
+        for path in HARNESS_SHOWCASE_FIXTURE_PATHS
+        if not any(path.startswith(root + "/") for root in roots)
+    ]
+    if unmatched:
+        issues.append("tracked fixture paths are not owned by a fixture group: " + ", ".join(unmatched))
+
+    if issues:
+        return ShowcaseCheck(
+            "fixture_contracts",
+            "WARN",
+            "Showcase fixture contract drift: " + "; ".join(issues) + ".",
+            "Update FIXTURE_GROUPS and HARNESS_SHOWCASE_FIXTURE_PATHS together.",
+        )
+    return ShowcaseCheck(
+        "fixture_contracts",
+        "PASS",
+        f"{len(FIXTURE_GROUPS)} fixture group(s) cover {len(HARNESS_SHOWCASE_FIXTURE_PATHS)} tracked fixture paths.",
+        "Keep fixture group definitions and tracked fixture paths synchronized.",
+    )
+
+
 def _check_fixture_group(*, repo_root: Path, group: dict[str, object]) -> ShowcaseCheck:
     root = str(group["root"])
-    expected_paths = [path for path in HARNESS_SHOWCASE_FIXTURE_PATHS if path.startswith(root + "/")]
+    expected_paths = _fixture_paths_for_root(root)
     missing = [path for path in expected_paths if not (repo_root / path).exists()]
     issues = [f"missing files {', '.join(missing)}"] if missing else []
 
@@ -341,7 +391,7 @@ def _check_fixture_group(*, repo_root: Path, group: dict[str, object]) -> Showca
 
 def _score_fixture_group(*, repo_root: Path, group: dict[str, object]) -> ShowcaseScore:
     root = str(group["root"])
-    expected_paths = [path for path in HARNESS_SHOWCASE_FIXTURE_PATHS if path.startswith(root + "/")]
+    expected_paths = _fixture_paths_for_root(root)
     present_files = sum(1 for path in expected_paths if (repo_root / path).exists())
 
     required_terms = dict(group.get("required_terms", {}))
@@ -378,6 +428,10 @@ def _score_fixture_group(*, repo_root: Path, group: dict[str, object]) -> Showca
 
 def _has_placeholder_text(text: str) -> bool:
     return bool(re.search(r"\bplaceholder\b|\bTBD\b|\blorem ipsum\b", text, flags=re.IGNORECASE))
+
+
+def _fixture_paths_for_root(root: str) -> list[str]:
+    return [path for path in HARNESS_SHOWCASE_FIXTURE_PATHS if path.startswith(root + "/")]
 
 
 def _fixture_portability_issues(*, full_path: Path, rel_path: str) -> list[str]:

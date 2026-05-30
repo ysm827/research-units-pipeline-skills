@@ -56,7 +56,8 @@ Schema: `harness-showcase-audit.v1`.
 
 The audit checks that this document references the tracked fixture paths, that
 the visual lineage asset still contains the expected fixture labels, that the
-fixture protocol files exist, and that the tracked deliverables are not
+fixture protocol files exist, that fixture group definitions still own the
+tracked paths they validate, and that the tracked deliverables are not
 placeholder-only examples. It also checks tracked fixture files for absolute
 local paths so examples remain portable across clones. For artifact-pack
 excerpt TSV files, it checks the canonical `category	path	exists	role`

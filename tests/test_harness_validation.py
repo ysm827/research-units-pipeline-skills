@@ -708,6 +708,7 @@ def test_showcase_audit_current_repo_passes() -> None:
         "showcase_doc",
         "lineage_assets",
         "pipeline_protocols",
+        "fixture_contracts",
         "research_brief_fixture",
         "source_tutorial_fixture",
     }
@@ -758,6 +759,32 @@ def test_showcase_audit_scorecard_counts_missing_marker(tmp_path: Path) -> None:
     assert score["present_files"] == score["tracked_files"]
     assert score["present_markers"] < score["required_markers"]
     assert "tracked files" in score["evidence_surface"]
+
+
+def test_showcase_audit_reports_fixture_contract_drift(tmp_path: Path, monkeypatch) -> None:
+    _write_minimal_showcase_audit_repo(tmp_path)
+    monkeypatch.setattr(
+        showcase_audit,
+        "FIXTURE_GROUPS",
+        (
+            {
+                "id": "research_brief_fixture",
+                "label": "research-brief fixture",
+                "root": showcase_audit.RESEARCH_BRIEF_ROOT,
+                "deliverables": ("output/NOT_TRACKED.md",),
+                "required_terms": {},
+            },
+        ),
+    )
+
+    payload = showcase_audit.build_showcase_audit(repo_root=tmp_path)
+
+    assert payload["verdict"] == "ATTENTION"
+    finding = next(item for item in payload["checks"] if item["id"] == "fixture_contracts")
+    assert finding["status"] == "WARN"
+    assert "Showcase fixture contract drift" in finding["evidence"]
+    assert "outside HARNESS_SHOWCASE_FIXTURE_PATHS" in finding["evidence"]
+    assert "tracked fixture paths are not owned by a fixture group" in finding["evidence"]
 
 
 def test_showcase_audit_reports_malformed_artifact_pack_excerpt_tsv(tmp_path: Path) -> None:

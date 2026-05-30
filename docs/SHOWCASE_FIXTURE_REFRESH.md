@@ -111,6 +111,8 @@ Before committing fixture changes, check:
 
 - `docs/HARNESS_SHOWCASE.md` references every tracked fixture surface that the
   showcase audit expects.
+- each new tracked fixture path is owned by the matching showcase fixture group
+  in `scripts/showcase_audit.py`.
 - `ARTIFACT_PACK_EXCERPT.tsv` has the canonical
   `category	path	exists	role` header.
 - TSV `exists` values are `true` or `false`.
