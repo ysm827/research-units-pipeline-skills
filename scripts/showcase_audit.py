@@ -18,6 +18,8 @@ from tooling.harness_contracts import (
 
 SCHEMA = "harness-showcase-audit.v1"
 SHOWCASE_DOC = "docs/HARNESS_SHOWCASE.md"
+ARTIFACT_PACK_EXCERPT_TSV_HEADER = ("category", "path", "exists", "role")
+ARTIFACT_PACK_EXCERPT_TSV_HEADER_LINE = "\t".join(ARTIFACT_PACK_EXCERPT_TSV_HEADER)
 PIPELINE_PROTOCOLS = (
     "pipelines/research-brief.pipeline.md",
     "pipelines/source-tutorial.pipeline.md",
@@ -307,6 +309,12 @@ def _check_fixture_group(*, repo_root: Path, group: dict[str, object]) -> Showca
         if missing_terms:
             issues.append(f"`{root}/{rel_path}` missing {', '.join(missing_terms)}")
 
+    for rel_path in expected_paths:
+        if rel_path.endswith("ARTIFACT_PACK_EXCERPT.tsv"):
+            full_path = repo_root / rel_path
+            if full_path.exists():
+                issues.extend(_artifact_pack_excerpt_tsv_issues(full_path=full_path, rel_path=rel_path))
+
     if issues:
         return ShowcaseCheck(
             str(group["id"]),
@@ -361,6 +369,38 @@ def _score_fixture_group(*, repo_root: Path, group: dict[str, object]) -> Showca
 
 def _has_placeholder_text(text: str) -> bool:
     return bool(re.search(r"\bplaceholder\b|\bTBD\b|\blorem ipsum\b", text, flags=re.IGNORECASE))
+
+
+def _artifact_pack_excerpt_tsv_issues(*, full_path: Path, rel_path: str) -> list[str]:
+    lines = _read_text(full_path).splitlines()
+    if not lines:
+        return [f"`{rel_path}` is empty"]
+
+    header = tuple(lines[0].split("\t"))
+    issues: list[str] = []
+    if header != ARTIFACT_PACK_EXCERPT_TSV_HEADER:
+        issues.append(
+            f"`{rel_path}` has non-canonical header "
+            f"`{lines[0]}`; expected `{ARTIFACT_PACK_EXCERPT_TSV_HEADER_LINE}`"
+        )
+
+    for line_no, line in enumerate(lines[1:], start=2):
+        if not line.strip():
+            continue
+        cells = line.split("\t")
+        if len(cells) != len(ARTIFACT_PACK_EXCERPT_TSV_HEADER):
+            issues.append(f"`{rel_path}` line {line_no} has {len(cells)} column(s); expected 4")
+            continue
+        category, path, exists, role = (cell.strip() for cell in cells)
+        if not category:
+            issues.append(f"`{rel_path}` line {line_no} has empty category")
+        if not path:
+            issues.append(f"`{rel_path}` line {line_no} has empty path")
+        if exists not in {"true", "false"}:
+            issues.append(f"`{rel_path}` line {line_no} has non-boolean exists value `{exists}`")
+        if not role:
+            issues.append(f"`{rel_path}` line {line_no} has empty role")
+    return issues
 
 
 def _as_terms(value: object) -> tuple[str, ...]:

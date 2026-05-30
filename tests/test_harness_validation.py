@@ -722,6 +722,30 @@ def test_showcase_audit_scorecard_counts_missing_marker(tmp_path: Path) -> None:
     assert "tracked files" in score["evidence_surface"]
 
 
+def test_showcase_audit_reports_malformed_artifact_pack_excerpt_tsv(tmp_path: Path) -> None:
+    _write_minimal_showcase_audit_repo(tmp_path)
+    excerpt = (
+        tmp_path
+        / showcase_audit.RESEARCH_BRIEF_ROOT
+        / "output"
+        / "ARTIFACT_PACK_EXCERPT.tsv"
+    )
+    excerpt.write_text(
+        "category\tpath\texists\trole\n"
+        "target_artifact\toutput/SNAPSHOT.md\tyes\tfinal deliverable\n"
+        "harness_report\toutput/CONTRACT_REPORT.md\ttrue\n",
+        encoding="utf-8",
+    )
+
+    payload = showcase_audit.build_showcase_audit(repo_root=tmp_path)
+
+    assert payload["verdict"] == "ATTENTION"
+    finding = next(item for item in payload["checks"] if item["id"] == "research_brief_fixture")
+    assert finding["status"] == "WARN"
+    assert "non-boolean exists value `yes`" in finding["evidence"]
+    assert "line 3 has 3 column(s); expected 4" in finding["evidence"]
+
+
 def test_showcase_audit_payload_validation_reports_shape_errors() -> None:
     issues = showcase_audit.validate_showcase_audit_payload(
         {

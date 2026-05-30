@@ -26,6 +26,9 @@ python scripts/showcase_audit.py --strict
 
 The schema describes portable showcase fixture health. It does not rerun live
 retrieval, compile LaTeX, execute units, or judge semantic research quality.
+For tracked `ARTIFACT_PACK_EXCERPT.tsv` files, the producer validates the
+canonical `category	path	exists	role` header, row width, non-empty category,
+path, and role cells, and boolean `true` / `false` values for `exists`.
 
 ## Top-Level Fields
 
