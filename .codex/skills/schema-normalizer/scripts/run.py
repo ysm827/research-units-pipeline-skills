@@ -313,7 +313,7 @@ def main() -> int:
             for e in errors[:12]:
                 report_lines.append(f"- {e}")
             if len(errors) > 12:
-                report_lines.append(f"- ... ({len(errors) - 12} more)")
+                report_lines.append(f"- and {len(errors) - 12} more errors")
             report_lines.append("")
             continue
 

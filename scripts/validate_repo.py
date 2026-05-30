@@ -20,6 +20,28 @@ DOCS_DIR = REPO_ROOT / "docs"
 sys.path.insert(0, str(REPO_ROOT))
 
 from tooling.pipeline_spec import PipelineSpec
+from tooling.harness_contracts import (
+    ADR_ALLOWED_STATUSES,
+    ADR_REQUIRED_METADATA,
+    ADR_REQUIRED_SECTIONS,
+    HARNESS_CI_GATES,
+    HARNESS_CI_WORKFLOW,
+    HARNESS_DOC_ENTRYPOINTS,
+    HARNESS_READINESS_AUDIT_SCRIPT,
+    HARNESS_README_LINKS,
+    HARNESS_SHOWCASE_AUDIT_GATE,
+    HARNESS_SHOWCASE_AUDIT_SCRIPT,
+    HARNESS_SHOWCASE_ASSET_PATHS,
+    HARNESS_SHOWCASE_FIXTURE_PATHS,
+    HARNESS_SKILL_AUDIT_GATE,
+    AUTO_RESEARCH_REQUIRED_TERMS,
+    PATTERN_REGISTER_REQUIRED_ADOPTION_RULES,
+    PATTERN_REGISTER_REQUIRED_PATTERN_SOURCES,
+    PATTERN_REGISTER_REQUIRED_REFERENCE_CODEBASES,
+    PATTERN_REGISTER_REQUIRED_SECTIONS,
+    PATTERN_REGISTER_REQUIRED_STATUSES,
+    SCHEMA_REFERENCE_DOCS,
+)
 
 REQUIRED_UNITS_COLS = {
     "unit_id",
@@ -375,6 +397,388 @@ def _validate_docs() -> list[Finding]:
         text = pipeline_flows.read_text(encoding="utf-8", errors="ignore")
         if "```mermaid" not in text:
             findings.append(Finding("WARN", "`docs/PIPELINE_FLOWS.md` has no Mermaid blocks (expected ` ```mermaid `)."))
+
+    findings.extend(_validate_harness_docs(repo_root=REPO_ROOT, docs_dir=DOCS_DIR))
+
+    return findings
+
+
+def _validate_harness_docs(*, repo_root: Path, docs_dir: Path) -> list[Finding]:
+    findings: list[Finding] = []
+
+    for rel_path, label in HARNESS_DOC_ENTRYPOINTS.items():
+        if not (repo_root / rel_path).exists():
+            findings.append(Finding("WARN", f"Missing `{rel_path}` ({label} entrypoint)."))
+
+    for readme_name in ("README.md", "README.zh-CN.md"):
+        readme_path = repo_root / readme_name
+        if not readme_path.exists():
+            findings.append(Finding("WARN", f"Missing `{readme_name}` (should link harness docs entrypoints)."))
+            continue
+        text = readme_path.read_text(encoding="utf-8", errors="ignore")
+        missing_links = [link for link in HARNESS_README_LINKS if link not in text]
+        if missing_links:
+            findings.append(
+                Finding(
+                    "WARN",
+                    f"`{readme_name}` is missing harness docs links: {', '.join(missing_links)}.",
+                )
+            )
+
+    architecture_doc = docs_dir / "HARNESS_ARCHITECTURE.md"
+    if architecture_doc.exists():
+        text = architecture_doc.read_text(encoding="utf-8", errors="ignore")
+        missing_refs = [
+            link
+            for link in (
+                "docs/AUTO_RESEARCH_HARNESS.md",
+                "docs/HARNESS_OPERATING_MODEL.md",
+                "docs/PIPELINE_TAXONOMY.md",
+                "docs/PROJECT_LANGUAGE.md",
+                "docs/HARNESS_ROADMAP.md",
+                "docs/HARNESS_READINESS.md",
+                "docs/HARNESS_READINESS_AUDIT.md",
+                "docs/PATTERN_REGISTER.md",
+                "docs/HARNESS_SYSTEM_MAP.md",
+                "docs/HARNESS_SHOWCASE.md",
+                "docs/HARNESS_RUN_WALKTHROUGH.md",
+                "docs/HARNESS_IMPROVEMENT_LOOP.md",
+                "docs/SKILL_AUDIT_SCHEMA.md",
+                "docs/DOCTOR_REPORT_SCHEMA.md",
+                "docs/RUN_AUDIT_SCHEMA.md",
+                "docs/RUN_AUDIT_DIFF_SCHEMA.md",
+                "docs/SHOWCASE_AUDIT_SCHEMA.md",
+            )
+            if link not in text
+        ]
+        if missing_refs:
+            findings.append(
+                Finding(
+                    "WARN",
+                    "`docs/HARNESS_ARCHITECTURE.md` is missing current-state references: "
+                    + ", ".join(missing_refs)
+                    + ".",
+                )
+            )
+
+    findings.extend(
+        _validate_pipeline_taxonomy(
+            repo_root=repo_root,
+            pipelines_dir=repo_root / "pipelines",
+            docs_dir=docs_dir,
+        )
+    )
+    findings.extend(_validate_adr_index(repo_root=repo_root, docs_dir=docs_dir))
+    findings.extend(_validate_adr_contracts(repo_root=repo_root, docs_dir=docs_dir))
+    findings.extend(_validate_schema_reference_docs(repo_root=repo_root))
+    findings.extend(_validate_auto_research_harness_doc(repo_root=repo_root))
+    findings.extend(_validate_harness_showcase(repo_root=repo_root))
+    findings.extend(_validate_pattern_register(repo_root=repo_root))
+    findings.extend(_validate_harness_ci_quality_gate(repo_root=repo_root))
+    findings.extend(_validate_harness_readiness_audit(repo_root=repo_root))
+
+    return findings
+
+
+def _validate_auto_research_harness_doc(*, repo_root: Path) -> list[Finding]:
+    rel_path = "docs/AUTO_RESEARCH_HARNESS.md"
+    doc_path = repo_root / rel_path
+    if not doc_path.exists():
+        return []
+
+    text = doc_path.read_text(encoding="utf-8", errors="ignore")
+    missing = [term for term in AUTO_RESEARCH_REQUIRED_TERMS if term not in text]
+    if missing:
+        return [
+            Finding(
+                "WARN",
+                f"`{rel_path}` is missing Auto Research Harness framing terms: "
+                + ", ".join(f"`{term}`" for term in missing)
+                + ".",
+            )
+        ]
+    return []
+
+
+def _validate_harness_showcase(*, repo_root: Path) -> list[Finding]:
+    rel_path = "docs/HARNESS_SHOWCASE.md"
+    doc_path = repo_root / rel_path
+    if not doc_path.exists():
+        return []
+
+    text = doc_path.read_text(encoding="utf-8", errors="ignore")
+    expected_paths = tuple(HARNESS_SHOWCASE_ASSET_PATHS) + tuple(HARNESS_SHOWCASE_FIXTURE_PATHS)
+    required_terms = (
+        "harness-showcase-audit.v1",
+        f"python {HARNESS_SHOWCASE_AUDIT_SCRIPT} --strict",
+    )
+    missing_links = [path for path in expected_paths if path not in text]
+    missing_paths = [path for path in expected_paths if not (repo_root / path).exists()]
+    missing_terms = [term for term in required_terms if term not in text]
+    problems: list[str] = []
+    if missing_links:
+        problems.append("showcase doc links " + ", ".join(f"`{path}`" for path in missing_links))
+    if missing_paths:
+        problems.append("fixture paths " + ", ".join(f"`{path}`" for path in missing_paths))
+    if missing_terms:
+        problems.append("audit metadata " + ", ".join(f"`{term}`" for term in missing_terms))
+    if problems:
+        return [
+            Finding(
+                "WARN",
+                f"`{rel_path}` is missing deliverable-first showcase evidence: "
+                + "; ".join(problems)
+                + ".",
+            )
+        ]
+    return []
+
+
+def _validate_pattern_register(*, repo_root: Path) -> list[Finding]:
+    rel_path = "docs/PATTERN_REGISTER.md"
+    doc_path = repo_root / rel_path
+    if not doc_path.exists():
+        return []
+
+    text = doc_path.read_text(encoding="utf-8", errors="ignore")
+    required_groups = {
+        "sections": PATTERN_REGISTER_REQUIRED_SECTIONS,
+        "pattern sources": PATTERN_REGISTER_REQUIRED_PATTERN_SOURCES,
+        "reference codebases": PATTERN_REGISTER_REQUIRED_REFERENCE_CODEBASES,
+        "status vocabulary": PATTERN_REGISTER_REQUIRED_STATUSES,
+        "adoption rules": PATTERN_REGISTER_REQUIRED_ADOPTION_RULES,
+    }
+    missing: list[str] = []
+    for label, needles in required_groups.items():
+        missing_bits = [needle for needle in needles if needle not in text]
+        if missing_bits:
+            missing.append(f"{label} {', '.join(f'`{bit}`' for bit in missing_bits)}")
+
+    if not missing:
+        return []
+
+    return [
+        Finding(
+            "WARN",
+            f"`{rel_path}` is missing pattern-register contract metadata: "
+            + "; ".join(missing)
+            + ".",
+        )
+    ]
+
+
+def _validate_harness_readiness_audit(*, repo_root: Path) -> list[Finding]:
+    script_path = repo_root / HARNESS_READINESS_AUDIT_SCRIPT
+    if not script_path.exists():
+        return [Finding("WARN", f"Missing `{HARNESS_READINESS_AUDIT_SCRIPT}` (harness readiness audit).")]
+
+    doc_path = repo_root / "docs" / "HARNESS_READINESS_AUDIT.md"
+    if not doc_path.exists():
+        return []
+    text = doc_path.read_text(encoding="utf-8", errors="ignore")
+    required_bits = (
+        "harness-readiness-audit.v1",
+        "python scripts/readiness_audit.py",
+        "docs/HARNESS_READINESS.md",
+    )
+    missing = [bit for bit in required_bits if bit not in text]
+    if missing:
+        return [
+            Finding(
+                "WARN",
+                "`docs/HARNESS_READINESS_AUDIT.md` is missing readiness audit metadata: "
+                + ", ".join(f"`{bit}`" for bit in missing)
+                + ".",
+            )
+        ]
+    return []
+
+
+def _validate_harness_ci_quality_gate(*, repo_root: Path) -> list[Finding]:
+    workflow_path = repo_root / HARNESS_CI_WORKFLOW
+    if not workflow_path.exists():
+        return [Finding("WARN", f"Missing `{HARNESS_CI_WORKFLOW}` (harness CI quality gate).")]
+
+    text = workflow_path.read_text(encoding="utf-8", errors="ignore")
+    missing = [gate for gate in HARNESS_CI_GATES if gate not in text]
+    if missing:
+        return [
+            Finding(
+                "WARN",
+                f"`{HARNESS_CI_WORKFLOW}` should run harness CI gates: "
+                + ", ".join(f"`{gate}`" for gate in missing)
+                + ".",
+            )
+        ]
+    return []
+
+
+def _rel_path(path: Path, repo_root: Path) -> str:
+    try:
+        return path.resolve().relative_to(repo_root.resolve()).as_posix()
+    except Exception:
+        return path.as_posix()
+
+
+def _validate_adr_index(*, repo_root: Path, docs_dir: Path) -> list[Finding]:
+    findings: list[Finding] = []
+    adr_dir = docs_dir / "adr"
+    if not adr_dir.exists():
+        return findings
+    index_path = adr_dir / "README.md"
+    if not index_path.exists():
+        findings.append(Finding("WARN", "Missing `docs/adr/README.md` (ADR index)."))
+        return findings
+
+    index_text = index_path.read_text(encoding="utf-8", errors="ignore")
+    adr_paths = sorted(adr_dir.glob("[0-9][0-9][0-9][0-9]-*.md"))
+    for adr_path in adr_paths:
+        if adr_path.name not in index_text:
+            findings.append(
+                Finding(
+                    "WARN",
+                    f"`docs/adr/README.md` is missing ADR index entry for `{_rel_path(adr_path, repo_root)}`.",
+                )
+            )
+
+    adr_filenames = {path.name for path in adr_paths}
+    for link in re.findall(r"\]\((\d{4}[^)]*?\.md)\)", index_text):
+        filename = Path(link).name
+        if filename not in adr_filenames:
+            findings.append(
+                Finding(
+                    "WARN",
+                    f"`docs/adr/README.md` links missing ADR file `{link}`.",
+                )
+            )
+
+    return findings
+
+
+def _validate_adr_contracts(*, repo_root: Path, docs_dir: Path) -> list[Finding]:
+    findings: list[Finding] = []
+    adr_dir = docs_dir / "adr"
+    if not adr_dir.exists():
+        return findings
+
+    for adr_path in sorted(adr_dir.glob("[0-9][0-9][0-9][0-9]-*.md")):
+        text = adr_path.read_text(encoding="utf-8", errors="ignore")
+        rel_path = _rel_path(adr_path, repo_root)
+        adr_number = adr_path.name[:4]
+        first_line = text.splitlines()[0] if text.splitlines() else ""
+
+        missing: list[str] = []
+        if f"ADR {adr_number}" not in first_line:
+            missing.append(f"title `# ADR {adr_number}: ...`")
+
+        status_match = re.search(r"(?im)^\s*-?\s*Status:\s*([A-Za-z-]+)\s*$", text)
+        if status_match is None:
+            missing.append("metadata `Status`")
+        else:
+            status = status_match.group(1).lower()
+            if status not in ADR_ALLOWED_STATUSES:
+                findings.append(
+                    Finding(
+                        "WARN",
+                        f"`{rel_path}` has unsupported ADR status `{status}`; "
+                        f"expected one of {', '.join(ADR_ALLOWED_STATUSES)}.",
+                    )
+                )
+
+        if re.search(r"(?im)^\s*-?\s*Date:\s*\d{4}-\d{2}-\d{2}\s*$", text) is None:
+            missing.append("metadata `Date`")
+
+        for section in ADR_REQUIRED_SECTIONS:
+            if section not in text:
+                missing.append(f"section `{section}`")
+
+        if missing:
+            findings.append(
+                Finding(
+                    "WARN",
+                    f"`{rel_path}` is missing ADR contract metadata: {', '.join(missing)}.",
+                )
+            )
+
+    return findings
+
+
+def _validate_schema_reference_docs(*, repo_root: Path) -> list[Finding]:
+    findings: list[Finding] = []
+    for rel_path, required_bits in SCHEMA_REFERENCE_DOCS.items():
+        doc_path = repo_root / rel_path
+        if not doc_path.exists():
+            continue
+        text = doc_path.read_text(encoding="utf-8", errors="ignore")
+        missing = [
+            f"{label} `{needle}`"
+            for label, needle in required_bits.items()
+            if needle not in text
+        ]
+        if missing:
+            findings.append(
+                Finding(
+                    "WARN",
+                    f"`{rel_path}` is missing schema reference metadata: {', '.join(missing)}.",
+                )
+            )
+    return findings
+
+
+def _validate_pipeline_taxonomy(*, repo_root: Path, pipelines_dir: Path, docs_dir: Path) -> list[Finding]:
+    findings: list[Finding] = []
+    taxonomy_doc = docs_dir / "PIPELINE_TAXONOMY.md"
+    if not taxonomy_doc.exists():
+        return findings
+    if not pipelines_dir.exists():
+        return findings
+
+    text = taxonomy_doc.read_text(encoding="utf-8", errors="ignore")
+    for pipeline_path in sorted(pipelines_dir.glob("*.pipeline.md")):
+        try:
+            spec = PipelineSpec.load(pipeline_path)
+        except Exception as exc:
+            findings.append(
+                Finding(
+                    "WARN",
+                    f"`docs/PIPELINE_TAXONOMY.md` could not load `{_rel_path(pipeline_path, repo_root)}` for drift check: {exc}",
+                )
+            )
+            continue
+
+        required_bits = {
+            "pipeline name": f"`{spec.name}`",
+            "contract path": f"`{_rel_path(spec.path, repo_root)}`",
+            "unit template": f"`{_rel_path(repo_root / spec.units_template, repo_root)}`",
+        }
+        missing = [f"{label} {needle}" for label, needle in required_bits.items() if needle not in text]
+        if missing:
+            findings.append(
+                Finding(
+                    "WARN",
+                    f"`docs/PIPELINE_TAXONOMY.md` is missing executable pipeline metadata for "
+                    f"`{spec.name}`: {', '.join(missing)}.",
+                )
+            )
+
+    graduate_doc = repo_root / "pipelines" / "graduate-paper-pipeline.md"
+    if graduate_doc.exists():
+        required_bits = {
+            "pipeline name": "`graduate-paper`",
+            "contract document": f"`{_rel_path(graduate_doc, repo_root)}`",
+            "research-stage maturity": "`Research-stage`",
+            "missing unit template marker": "Unit template: none yet",
+        }
+        missing = [f"{label} {needle}" for label, needle in required_bits.items() if needle not in text]
+        if missing:
+            findings.append(
+                Finding(
+                    "WARN",
+                    "`docs/PIPELINE_TAXONOMY.md` is missing graduate-paper research-stage metadata: "
+                    + ", ".join(missing)
+                    + ".",
+                )
+            )
 
     return findings
 

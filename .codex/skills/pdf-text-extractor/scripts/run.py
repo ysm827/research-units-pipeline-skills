@@ -233,9 +233,9 @@ def _write_missing_pdfs_report(workspace: Path, rows: list[dict[str, Any]], *, l
     ]
     for r in rows[:200]:
         pid = str(r.get("paper_id") or "").strip()
-        title = str(r.get("title") or "").strip().replace("|", "\|")
-        pdf_url = str(r.get("pdf_url") or "").strip().replace("|", "\|")
-        reason = str(r.get("reason") or "").strip().replace("|", "\|")
+        title = str(r.get("title") or "").strip().replace("|", "\\|")
+        pdf_url = str(r.get("pdf_url") or "").strip().replace("|", "\\|")
+        reason = str(r.get("reason") or "").strip().replace("|", "\\|")
         lines.append(f"| {pid} | {title} | {pdf_url} | {reason} |")
 
     if len(rows) > 200:

@@ -2,9 +2,25 @@
 
 > 语言： [English](README.md) | **简体中文**
 
-这个项目使用语义化 skills，把研究工作流组织成可复用的 pipelines。
+这个项目是一套 Auto Research Harness。
 
-它面向的是“脆弱的 prompting”和“过于僵硬的 scripting”之间的那一段空间。通过把研究任务组织成带有明确工件、检查点和 guardrails 的分阶段 pipeline，它让复杂工作更容易复用、更容易检查，也更适合迭代推进。最终得到的不是每次都要从头重搭的一次性流程，而是一套可以恢复、可以审计、也可以持续改进的工作方式。
+它用 file-first 的方式，把开放式研究和写作目标转成协议化执行、持久化 artifacts、可评估 evidence surfaces 和可复用 project knowledge。模型负责语义判断；harness 负责提供约束，让这些判断可以恢复、审计、比较和持续改进。
+
+## Operating Model
+
+这个架构最好先看成一个五层金字塔：
+
+| 层级 | 在本项目里的含义 | 当前 repo surface |
+|---|---|---|
+| Learning Layer | 可复用的项目记忆 | `docs/adr/`、`docs/PROJECT_LANGUAGE.md`、`docs/PATTERN_REGISTER.md`、roadmap、validation |
+| Evidence Loop | 证明一次 run 是否健康到可以继续 | doctor、audit、audit-diff、quality gates、manifests |
+| Execution Ledger | 可恢复、可检查、可交接的每次 run 状态 | `workspaces/<name>/`、`UNITS.csv`、`STATUS.md`、`DECISIONS.md`、outputs |
+| Workflow Protocol | 被约束过的任务形态 | `pipelines/*.pipeline.md`、`templates/UNITS.*.csv`、taxonomy |
+| Capability Surface | 可复用的语义判断能力 | `.codex/skills/`、references、skill scripts |
+
+如果你想先理解研究纲领，请看 [docs/AUTO_RESEARCH_HARNESS.md](docs/AUTO_RESEARCH_HARNESS.md)；如果你想看金字塔模型，请看 [docs/HARNESS_OPERATING_MODEL.md](docs/HARNESS_OPERATING_MODEL.md)。如果你想先看最终交付物，再反向理解中间过程，请从 [docs/HARNESS_SHOWCASE.md](docs/HARNESS_SHOWCASE.md) 开始。
+
+这里的 self-improve 是有边界的：最终交付物如果变差，不应该只是重写一遍，而是要反推到中间 artifact、workflow protocol、skill、模型能力限制或 harness fallback 的缺陷，再通过可见合同和验证来修复。详细模型见 [docs/HARNESS_IMPROVEMENT_LOOP.md](docs/HARNESS_IMPROVEMENT_LOOP.md)。
 
 ## 这个仓库当前覆盖什么
 
@@ -136,19 +152,38 @@ Use the graduate-paper workflow to reorganize my Chinese thesis materials before
 ```bash
 python -m pytest -q
 python scripts/validate_repo.py
-python scripts/audit_skills.py
+python scripts/audit_skills.py --fail-on WARN
+python scripts/audit_skills.py --review-category template_placeholder --limit 20
+python scripts/audit_skills.py --summary-only
 python scripts/generate_skill_graph.py
+python scripts/readiness_audit.py --progress workspaces/harness-upgrade/GOAL_STATUS.md
+python scripts/showcase_audit.py --strict
 python scripts/pipeline.py doctor --workspace workspaces/<name>
+python scripts/pipeline.py doctor --workspace workspaces/<name> --write
+python scripts/pipeline.py audit --workspace workspaces/<name> --write
+python scripts/pipeline.py audit-diff --before workspaces/<name>/output/RUN_AUDIT.before.json --after workspaces/<name>/output/RUN_AUDIT.json --write
 ```
 
-`validate_repo.py --strict --no-check-quality` 是可执行 pipelines 的阻塞合同检查。`audit_skills.py` 默认只报告 review signal，只有 blocking error 才会非零退出。`pipeline.py doctor` 是 workspace 级 harness 检查：它会展示当前 checkpoint、unit 状态计数、下一个可运行 unit、缺失依赖和 DONE unit 缺失输出。脚本型 unit 还会写入 `output/unit_logs/<unit>.<skill>.manifest.json`，记录输出哈希，方便追踪。
+`validate_repo.py --strict --no-check-quality` 是可执行 pipelines 的阻塞合同检查。`audit_skills.py --fail-on WARN` 是 CI 使用的 skill hygiene gate：WARN 级 finding 应当对应可执行修复，INFO 级 finding 保持为 review signal，并按 `review_category` 和 `next_action` 分组，例如 syntax placeholder、reference example、placeholder policy、asset palette、anti-pattern guidance。使用 `--review-category` 和 `--limit` 可以只查看一个 review queue，避免打印完整报告；只需要分组计数时用 `--summary-only`。`readiness_audit.py` 检查最终 harness closure audit 前需要的证据面；它不跑测试，也不会标记 goal 完成。`showcase_audit.py` 检查 `example/` 下的可移植示例，让先看交付物的展示路径同时具备真实输出、protocol link、evidence report 和可视化 lineage asset；CI 也会把它作为受保护的 exhibit gate 来跑。`pipeline.py doctor` 是 workspace 级 harness 检查：它会展示当前 checkpoint、unit 状态计数、下一个可运行 unit、缺失依赖、DONE unit 缺失输出、typed remediation category 和 next action。加上 `--write` 后，同一份诊断会沉淀到 `output/DOCTOR_REPORT.md` 和 `output/DOCTOR_REPORT.json`。`pipeline.py audit --write` 会生成 `output/RUN_AUDIT.md` 和 `output/RUN_AUDIT.json`，作为 compact run ledger，覆盖 workspace 文件、unit 状态、target artifact coverage、manifests、近期 harness reports 和 audit verdict。脚本型 unit 还会写入 `output/unit_logs/<unit>.<skill>.manifest.json`，记录输出哈希，方便追踪。
+
+`pipeline.py audit-diff` 会比较两个有效的 `RUN_AUDIT.json`，加上 `--write` 后会在 after payload 旁写入 `RUN_AUDIT_DIFF.md` 和 `RUN_AUDIT_DIFF.json`。当一次 repair 或后续 unit 应当证明 target artifacts、unit status、manifests 或 harness issues 真的改善，而不只是发生变化时，用这个命令。
+
+如果要理解架构层，请先看 [docs/AUTO_RESEARCH_HARNESS.md](docs/AUTO_RESEARCH_HARNESS.md)，再看 [docs/HARNESS_OPERATING_MODEL.md](docs/HARNESS_OPERATING_MODEL.md)、[docs/HARNESS_ARCHITECTURE.md](docs/HARNESS_ARCHITECTURE.md)、可视化层级图 [docs/HARNESS_SYSTEM_MAP.md](docs/HARNESS_SYSTEM_MAP.md)、先看交付物的展示路径 [docs/HARNESS_SHOWCASE.md](docs/HARNESS_SHOWCASE.md)、命令级运行示例 [docs/HARNESS_RUN_WALKTHROUGH.md](docs/HARNESS_RUN_WALKTHROUGH.md)，以及有边界的 self-improvement 模型 [docs/HARNESS_IMPROVEMENT_LOOP.md](docs/HARNESS_IMPROVEMENT_LOOP.md)。分阶段升级路径在 [docs/HARNESS_ROADMAP.md](docs/HARNESS_ROADMAP.md)，当前完成证据总账在 [docs/HARNESS_READINESS.md](docs/HARNESS_READINESS.md)，快速 readiness audit 合同在 [docs/HARNESS_READINESS_AUDIT.md](docs/HARNESS_READINESS_AUDIT.md)，外部模式到本 repo 的映射在 [docs/PATTERN_REGISTER.md](docs/PATTERN_REGISTER.md)，`skill-audit-report.v1` 字段合同在 [docs/SKILL_AUDIT_SCHEMA.md](docs/SKILL_AUDIT_SCHEMA.md)，`doctor-report.v1` 字段合同在 [docs/DOCTOR_REPORT_SCHEMA.md](docs/DOCTOR_REPORT_SCHEMA.md)，`run-audit.v1` 字段合同在 [docs/RUN_AUDIT_SCHEMA.md](docs/RUN_AUDIT_SCHEMA.md)，`run-audit-diff.v1` 字段合同在 [docs/RUN_AUDIT_DIFF_SCHEMA.md](docs/RUN_AUDIT_DIFF_SCHEMA.md)，`harness-showcase-audit.v1` 字段合同在 [docs/SHOWCASE_AUDIT_SCHEMA.md](docs/SHOWCASE_AUDIT_SCHEMA.md)。架构决策记录放在 [docs/adr/](docs/adr/)，包括 skills 与 harness 的职责分层，以及 doctor / run-audit / audit-diff / showcase-audit JSON 决策。
 
 ## 推荐阅读路径
 
 1. 先看这个首页，理解仓库级别的定位。
-2. 再打开与你任务和语言对应的功能说明。
-3. 然后去看 `pipelines/` 下对应的 pipeline 合同。
-4. 如果你要改行为而不是只运行，再去看 `.codex/skills/` 里的相关 skills。
+2. 先看 [docs/AUTO_RESEARCH_HARNESS.md](docs/AUTO_RESEARCH_HARNESS.md)，理解 Auto Research Harness 的核心论点。
+3. 再看 [docs/HARNESS_SHOWCASE.md](docs/HARNESS_SHOWCASE.md)，先看最终交付物，再反向追溯中间 artifacts。
+4. 再看 [docs/HARNESS_OPERATING_MODEL.md](docs/HARNESS_OPERATING_MODEL.md)，理解金字塔模型和系统故事。
+5. 再看 [docs/HARNESS_SYSTEM_MAP.md](docs/HARNESS_SYSTEM_MAP.md)，理解层级关系和执行闭环。
+6. 再看 [docs/HARNESS_RUN_WALKTHROUGH.md](docs/HARNESS_RUN_WALKTHROUGH.md)，理解一个真实初始化 workspace、doctor report 和 run audit 如何串起来。
+7. 再看 [docs/HARNESS_IMPROVEMENT_LOOP.md](docs/HARNESS_IMPROVEMENT_LOOP.md)，理解最终交付物的问题如何反向修复中间 artifacts 和合同。
+8. 如果你要改系统而不是只运行流程，再看 [docs/HARNESS_ARCHITECTURE.md](docs/HARNESS_ARCHITECTURE.md)。
+9. 用 [docs/HARNESS_ROADMAP.md](docs/HARNESS_ROADMAP.md) 判断哪些升级已采纳、暂缓或下一步要做。
+10. 再打开与你任务和语言对应的功能说明。
+11. 然后去看 `pipelines/` 下对应的 pipeline 合同。
+12. 如果你要改行为而不是只运行，再去看 `.codex/skills/` 里的相关 skills。
 
 ## 文档导航
 
@@ -166,6 +201,25 @@ python scripts/pipeline.py doctor --workspace workspaces/<name>
 
 项目参考：
 
+- [docs/AUTO_RESEARCH_HARNESS.md](docs/AUTO_RESEARCH_HARNESS.md)
+- [docs/HARNESS_ARCHITECTURE.md](docs/HARNESS_ARCHITECTURE.md)
+- [docs/HARNESS_OPERATING_MODEL.md](docs/HARNESS_OPERATING_MODEL.md)
+- [docs/HARNESS_SYSTEM_MAP.md](docs/HARNESS_SYSTEM_MAP.md)
+- [docs/HARNESS_SHOWCASE.md](docs/HARNESS_SHOWCASE.md)
+- [docs/HARNESS_RUN_WALKTHROUGH.md](docs/HARNESS_RUN_WALKTHROUGH.md)
+- [docs/HARNESS_IMPROVEMENT_LOOP.md](docs/HARNESS_IMPROVEMENT_LOOP.md)
+- [docs/PIPELINE_TAXONOMY.md](docs/PIPELINE_TAXONOMY.md)
+- [docs/PROJECT_LANGUAGE.md](docs/PROJECT_LANGUAGE.md)
+- [docs/HARNESS_ROADMAP.md](docs/HARNESS_ROADMAP.md)
+- [docs/HARNESS_READINESS.md](docs/HARNESS_READINESS.md)
+- [docs/HARNESS_READINESS_AUDIT.md](docs/HARNESS_READINESS_AUDIT.md)
+- [docs/PATTERN_REGISTER.md](docs/PATTERN_REGISTER.md)
+- [docs/SKILL_AUDIT_SCHEMA.md](docs/SKILL_AUDIT_SCHEMA.md)
+- [docs/DOCTOR_REPORT_SCHEMA.md](docs/DOCTOR_REPORT_SCHEMA.md)
+- [docs/RUN_AUDIT_SCHEMA.md](docs/RUN_AUDIT_SCHEMA.md)
+- [docs/RUN_AUDIT_DIFF_SCHEMA.md](docs/RUN_AUDIT_DIFF_SCHEMA.md)
+- [docs/SHOWCASE_AUDIT_SCHEMA.md](docs/SHOWCASE_AUDIT_SCHEMA.md)
+- [docs/adr/](docs/adr/)
 - [SKILL_INDEX.md](SKILL_INDEX.md)
 - [SKILLS_STANDARD.md](SKILLS_STANDARD.md)
 

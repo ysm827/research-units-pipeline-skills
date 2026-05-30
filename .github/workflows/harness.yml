@@ -29,5 +29,8 @@ jobs:
       - name: Validate executable pipeline contracts
         run: python scripts/validate_repo.py --no-check-quality --strict
 
-      - name: Audit skills for blocking issues
-        run: python scripts/audit_skills.py --fail-on ERROR
+      - name: Audit showcase fixtures
+        run: python scripts/showcase_audit.py --strict
+
+      - name: Audit skills for actionable warnings
+        run: python scripts/audit_skills.py --fail-on WARN

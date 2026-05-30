@@ -10,7 +10,21 @@ sys.path.insert(0, str(REPO_ROOT))
 
 from tooling.common import atomic_write_text, copy_tree, resolve_pipeline_spec_path, today_iso
 from tooling.executor import run_one_unit
-from tooling.harness import build_doctor_report
+from tooling.harness import (
+    build_doctor_payload,
+    build_run_audit_payload,
+    build_run_audit_diff_payload,
+    load_run_audit_payload,
+    render_doctor_report,
+    render_run_audit_diff_report,
+    render_run_audit_report,
+    write_doctor_json,
+    write_doctor_report,
+    write_run_audit_diff_json,
+    write_run_audit_diff_report,
+    write_run_audit_json,
+    write_run_audit_report,
+)
 from tooling.pipeline_spec import PipelineSpec
 
 def _normalize_pipeline_name(pipeline: str) -> str:
@@ -70,6 +84,24 @@ def main() -> int:
 
     doctor_p = sub.add_parser("doctor", help="Diagnose workspace harness state without running units")
     doctor_p.add_argument("--workspace", required=True, help="Workspace directory")
+    doctor_p.add_argument(
+        "--write",
+        action="store_true",
+        help="Write doctor artifacts to output/DOCTOR_REPORT.md and output/DOCTOR_REPORT.json",
+    )
+
+    audit_p = sub.add_parser("audit", help="Audit a workspace run ledger and target artifact coverage")
+    audit_p.add_argument("--workspace", required=True, help="Workspace directory")
+    audit_p.add_argument("--write", action="store_true", help="Write audit artifacts to output/RUN_AUDIT.md and output/RUN_AUDIT.json")
+
+    audit_diff_p = sub.add_parser("audit-diff", help="Compare two RUN_AUDIT.json payloads")
+    audit_diff_p.add_argument("--before", required=True, help="Earlier output/RUN_AUDIT.json path")
+    audit_diff_p.add_argument("--after", required=True, help="Later output/RUN_AUDIT.json path")
+    audit_diff_p.add_argument(
+        "--write",
+        action="store_true",
+        help="Write diff artifacts to RUN_AUDIT_DIFF.md and RUN_AUDIT_DIFF.json beside the after payload",
+    )
 
     approve_p = sub.add_parser("approve", help="Tick an approval checkbox in DECISIONS.md (e.g., Approve C2)")
     approve_p.add_argument("--workspace", required=True, help="Workspace directory")
@@ -226,7 +258,51 @@ def main() -> int:
 
     if args.cmd == "doctor":
         workspace = Path(args.workspace).resolve()
-        exit_code, report = build_doctor_report(workspace=workspace, repo_root=repo_root)
+        exit_code, payload = build_doctor_payload(workspace=workspace, repo_root=repo_root)
+        report = render_doctor_report(payload)
+        if args.write:
+            report_path = write_doctor_report(workspace=workspace, report=report)
+            json_path = write_doctor_json(workspace=workspace, payload=payload)
+            print(f"Wrote {report_path}")
+            print(f"Wrote {json_path}")
+        print(report, end="")
+        return exit_code
+
+    if args.cmd == "audit":
+        workspace = Path(args.workspace).resolve()
+        exit_code, payload = build_run_audit_payload(workspace=workspace, repo_root=repo_root)
+        report = render_run_audit_report(payload)
+        if args.write:
+            report_path = write_run_audit_report(workspace=workspace, report=report)
+            json_path = write_run_audit_json(workspace=workspace, payload=payload)
+            print(f"Wrote {report_path}")
+            print(f"Wrote {json_path}")
+        print(report, end="")
+        return exit_code
+
+    if args.cmd == "audit-diff":
+        before_path = Path(args.before).resolve()
+        after_path = Path(args.after).resolve()
+        try:
+            before_payload = load_run_audit_payload(before_path)
+            after_payload = load_run_audit_payload(after_path)
+        except ValueError as exc:
+            print(str(exc), file=sys.stderr)
+            return 2
+
+        exit_code, payload = build_run_audit_diff_payload(
+            before_path=before_path,
+            before_payload=before_payload,
+            after_path=after_path,
+            after_payload=after_payload,
+        )
+        report = render_run_audit_diff_report(payload)
+        if args.write:
+            output_dir = after_path.parent
+            report_path = write_run_audit_diff_report(output_dir=output_dir, report=report)
+            json_path = write_run_audit_diff_json(output_dir=output_dir, payload=payload)
+            print(f"Wrote {report_path}")
+            print(f"Wrote {json_path}")
         print(report, end="")
         return exit_code
 

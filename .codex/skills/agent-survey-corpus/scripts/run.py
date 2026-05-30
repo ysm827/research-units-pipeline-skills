@@ -210,7 +210,7 @@ def _build_style_report(records: list[dict[str, object]], *, workspace: Path, ou
         counts.append(len(headings))
         sample = "; ".join(headings[:8])
         if len(headings) > 8:
-            sample += " …"
+            sample += f"; and {len(headings) - 8} more"
 
         rows.append((arxiv_id, pages, len(headings), sample))
 

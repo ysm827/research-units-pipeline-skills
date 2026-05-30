@@ -1,0 +1,271 @@
+from __future__ import annotations
+
+
+HARNESS_DOC_ENTRYPOINTS = {
+    "docs/AUTO_RESEARCH_HARNESS.md": "auto research harness program",
+    "docs/HARNESS_OPERATING_MODEL.md": "harness operating model",
+    "docs/HARNESS_ARCHITECTURE.md": "harness architecture",
+    "docs/HARNESS_SYSTEM_MAP.md": "harness system map",
+    "docs/HARNESS_SHOWCASE.md": "harness showcase",
+    "docs/HARNESS_RUN_WALKTHROUGH.md": "harness run walkthrough",
+    "docs/HARNESS_IMPROVEMENT_LOOP.md": "harness improvement loop",
+    "docs/PIPELINE_TAXONOMY.md": "pipeline taxonomy",
+    "docs/PROJECT_LANGUAGE.md": "project language",
+    "docs/HARNESS_ROADMAP.md": "harness roadmap",
+    "docs/HARNESS_READINESS.md": "harness readiness",
+    "docs/HARNESS_READINESS_AUDIT.md": "harness readiness audit",
+    "docs/PATTERN_REGISTER.md": "external pattern register",
+    "docs/SKILL_AUDIT_SCHEMA.md": "skill audit schema reference",
+    "docs/DOCTOR_REPORT_SCHEMA.md": "doctor report schema reference",
+    "docs/RUN_AUDIT_SCHEMA.md": "run-audit schema reference",
+    "docs/RUN_AUDIT_DIFF_SCHEMA.md": "run-audit diff schema reference",
+    "docs/SHOWCASE_AUDIT_SCHEMA.md": "showcase audit schema reference",
+    "docs/adr/README.md": "ADR index",
+    "docs/adr/0001-separate-semantic-skills-from-deterministic-harness.md": "skills-vs-harness ADR",
+    "docs/adr/0002-keep-run-audit-as-markdown-plus-json.md": "run-audit sidecar ADR",
+    "docs/adr/0003-keep-doctor-report-as-markdown-plus-json.md": "doctor report sidecar ADR",
+    "docs/adr/0004-keep-skill-audit-as-repo-local-json-before-sarif.md": "skill-audit JSON/SARIF ADR",
+    "docs/adr/0005-keep-run-audit-diff-as-json-backed-comparison.md": "run-audit diff ADR",
+    "docs/adr/0006-keep-showcase-audit-as-repo-local-json-contract.md": "showcase-audit JSON ADR",
+}
+
+HARNESS_README_LINKS = (
+    "docs/AUTO_RESEARCH_HARNESS.md",
+    "docs/HARNESS_OPERATING_MODEL.md",
+    "docs/HARNESS_ARCHITECTURE.md",
+    "docs/HARNESS_SYSTEM_MAP.md",
+    "docs/HARNESS_SHOWCASE.md",
+    "docs/HARNESS_RUN_WALKTHROUGH.md",
+    "docs/HARNESS_IMPROVEMENT_LOOP.md",
+    "docs/PIPELINE_TAXONOMY.md",
+    "docs/PROJECT_LANGUAGE.md",
+    "docs/HARNESS_ROADMAP.md",
+    "docs/HARNESS_READINESS.md",
+    "docs/HARNESS_READINESS_AUDIT.md",
+    "docs/PATTERN_REGISTER.md",
+    "docs/SKILL_AUDIT_SCHEMA.md",
+    "docs/DOCTOR_REPORT_SCHEMA.md",
+    "docs/RUN_AUDIT_SCHEMA.md",
+    "docs/RUN_AUDIT_DIFF_SCHEMA.md",
+    "docs/SHOWCASE_AUDIT_SCHEMA.md",
+    "docs/adr/",
+)
+
+SCHEMA_REFERENCE_DOCS = {
+    "docs/SKILL_AUDIT_SCHEMA.md": {
+        "schema": "skill-audit-report.v1",
+        "json_output": "python scripts/audit_skills.py --format json",
+        "producer": "scripts.audit_skills.build_report_payload",
+        "validator": "scripts.audit_skills.validate_skill_audit_payload",
+        "ci_gate": "python scripts/audit_skills.py --fail-on WARN",
+        "adr": "docs/adr/0004-keep-skill-audit-as-repo-local-json-before-sarif.md",
+    },
+    "docs/DOCTOR_REPORT_SCHEMA.md": {
+        "schema": "doctor-report.v1",
+        "json_path": "output/DOCTOR_REPORT.json",
+        "producer": "tooling.harness.build_doctor_payload",
+        "validator": "tooling.harness.validate_doctor_payload",
+        "adr": "docs/adr/0003-keep-doctor-report-as-markdown-plus-json.md",
+    },
+    "docs/RUN_AUDIT_SCHEMA.md": {
+        "schema": "run-audit.v1",
+        "json_path": "output/RUN_AUDIT.json",
+        "producer": "tooling.harness.build_run_audit_payload",
+        "validator": "tooling.harness.validate_run_audit_payload",
+        "adr": "docs/adr/0002-keep-run-audit-as-markdown-plus-json.md",
+    },
+    "docs/RUN_AUDIT_DIFF_SCHEMA.md": {
+        "schema": "run-audit-diff.v1",
+        "json_path": "output/RUN_AUDIT_DIFF.json",
+        "producer": "tooling.harness.build_run_audit_diff_payload",
+        "validator": "tooling.harness.validate_run_audit_diff_payload",
+        "adr": "docs/adr/0005-keep-run-audit-diff-as-json-backed-comparison.md",
+    },
+    "docs/SHOWCASE_AUDIT_SCHEMA.md": {
+        "schema": "harness-showcase-audit.v1",
+        "json_output": "python scripts/showcase_audit.py --format json",
+        "producer": "scripts.showcase_audit.build_showcase_audit",
+        "validator": "scripts.showcase_audit.validate_showcase_audit_payload",
+        "ci_gate": "python scripts/showcase_audit.py --strict",
+        "adr": "docs/adr/0006-keep-showcase-audit-as-repo-local-json-contract.md",
+    },
+}
+
+ADR_ALLOWED_STATUSES = (
+    "accepted",
+    "deprecated",
+    "superseded",
+)
+
+ADR_REQUIRED_METADATA = (
+    "Status",
+    "Date",
+)
+
+ADR_REQUIRED_SECTIONS = (
+    "## Context",
+    "## Decision",
+    "## Consequences",
+    "## Related Files",
+)
+
+PATTERN_REGISTER_REQUIRED_SECTIONS = (
+    "## Pattern Map",
+    "## Reference Codebases To Learn From",
+    "## Adoption Rules",
+    "## Source References",
+)
+
+PATTERN_REGISTER_REQUIRED_PATTERN_SOURCES = (
+    "Temporal durable execution",
+    "DVC pipelines",
+    "Backstage software catalog",
+    "OpenTelemetry semantic conventions",
+    "LangGraph persistence",
+    "Prefect flow/task split",
+    "MADR/ADR templates",
+    "JSON Schema-style compatibility",
+    "SARIF static analysis interchange",
+    "Evaluation harnesses and benchmark dashboards",
+    "Database-backed run stores",
+    "External workflow runtimes",
+)
+
+PATTERN_REGISTER_REQUIRED_REFERENCE_CODEBASES = (
+    "| Temporal |",
+    "| DVC |",
+    "| Backstage |",
+    "| OpenTelemetry |",
+    "| LangGraph |",
+    "| Prefect |",
+    "| MADR/ADR templates |",
+    "| JSON Schema |",
+    "| SARIF/OASIS |",
+)
+
+PATTERN_REGISTER_REQUIRED_STATUSES = (
+    "`Adopted`",
+    "`Partial`",
+    "`Deferred`",
+)
+
+PATTERN_REGISTER_REQUIRED_ADOPTION_RULES = (
+    "Borrow the discipline, not the runtime",
+    "Map every adopted idea to a real file, command, test, or artifact",
+    "If adoption changes a repo-level contract, record the decision as an ADR",
+)
+
+HARNESS_CI_WORKFLOW = ".github/workflows/harness.yml"
+HARNESS_SKILL_AUDIT_GATE = "python scripts/audit_skills.py --fail-on WARN"
+HARNESS_READINESS_AUDIT_SCRIPT = "scripts/readiness_audit.py"
+HARNESS_SHOWCASE_AUDIT_SCRIPT = "scripts/showcase_audit.py"
+HARNESS_SHOWCASE_AUDIT_GATE = "python scripts/showcase_audit.py --strict"
+HARNESS_CI_GATES = (
+    HARNESS_SKILL_AUDIT_GATE,
+    HARNESS_SHOWCASE_AUDIT_GATE,
+)
+
+READINESS_AUDIT_SCHEMA = "harness-readiness-audit.v1"
+READINESS_PROGRESS_PATH = "workspaces/harness-upgrade/GOAL_STATUS.md"
+READINESS_MIN_ITERATIONS = 10
+
+READINESS_REQUIRED_DOCS = (
+    "README.md",
+    "README.zh-CN.md",
+    "docs/AUTO_RESEARCH_HARNESS.md",
+    "docs/HARNESS_OPERATING_MODEL.md",
+    "docs/HARNESS_ARCHITECTURE.md",
+    "docs/HARNESS_SYSTEM_MAP.md",
+    "docs/HARNESS_SHOWCASE.md",
+    "docs/HARNESS_RUN_WALKTHROUGH.md",
+    "docs/HARNESS_IMPROVEMENT_LOOP.md",
+    "docs/PIPELINE_TAXONOMY.md",
+    "docs/PROJECT_LANGUAGE.md",
+    "docs/HARNESS_ROADMAP.md",
+    "docs/HARNESS_READINESS.md",
+    "docs/HARNESS_READINESS_AUDIT.md",
+    "docs/PATTERN_REGISTER.md",
+    "docs/SKILL_AUDIT_SCHEMA.md",
+    "docs/DOCTOR_REPORT_SCHEMA.md",
+    "docs/RUN_AUDIT_SCHEMA.md",
+    "docs/RUN_AUDIT_DIFF_SCHEMA.md",
+    "docs/SHOWCASE_AUDIT_SCHEMA.md",
+    "docs/adr/README.md",
+)
+
+CURRENT_WORKFLOWS = (
+    "arxiv-survey",
+    "arxiv-survey-latex",
+    "research-brief",
+    "paper-review",
+    "evidence-review",
+    "idea-brainstorm",
+    "source-tutorial",
+    "graduate-paper",
+)
+
+EXECUTABLE_PIPELINE_CONTRACTS = (
+    "pipelines/arxiv-survey.pipeline.md",
+    "pipelines/arxiv-survey-latex.pipeline.md",
+    "pipelines/research-brief.pipeline.md",
+    "pipelines/paper-review.pipeline.md",
+    "pipelines/evidence-review.pipeline.md",
+    "pipelines/idea-brainstorm.pipeline.md",
+    "pipelines/source-tutorial.pipeline.md",
+)
+
+EXECUTABLE_UNIT_TEMPLATES = (
+    "templates/UNITS.arxiv-survey.csv",
+    "templates/UNITS.arxiv-survey-latex.csv",
+    "templates/UNITS.research-brief.csv",
+    "templates/UNITS.paper-review.csv",
+    "templates/UNITS.evidence-review.csv",
+    "templates/UNITS.idea-brainstorm.csv",
+    "templates/UNITS.source-tutorial.csv",
+)
+
+READINESS_VALIDATION_SURFACES = (
+    "scripts/validate_repo.py",
+    "scripts/audit_skills.py",
+    "scripts/pipeline.py",
+    "scripts/generate_skill_graph.py",
+    "scripts/readiness_audit.py",
+    "scripts/showcase_audit.py",
+    "tooling/harness_contracts.py",
+    "tests/test_harness_smoke.py",
+    "tests/test_harness_validation.py",
+    "tests/test_pipeline_harness_doctor.py",
+    ".github/workflows/harness.yml",
+)
+
+HARNESS_SHOWCASE_FIXTURE_PATHS = (
+    "example/research-brief/rag-evaluation-harness-demo/README.md",
+    "example/research-brief/rag-evaluation-harness-demo/output/SNAPSHOT.md",
+    "example/research-brief/rag-evaluation-harness-demo/outline/outline.yml",
+    "example/research-brief/rag-evaluation-harness-demo/outline/taxonomy.yml",
+    "example/research-brief/rag-evaluation-harness-demo/papers/core_set.csv",
+    "example/research-brief/rag-evaluation-harness-demo/output/DELIVERABLE_SELFLOOP_TODO.md",
+    "example/research-brief/rag-evaluation-harness-demo/output/CONTRACT_REPORT.md",
+    "example/source-tutorial/robot-learning-harness-demo/README.md",
+    "example/source-tutorial/robot-learning-harness-demo/output/TUTORIAL_EXCERPT.md",
+    "example/source-tutorial/robot-learning-harness-demo/output/TUTORIAL_SPEC_EXCERPT.md",
+    "example/source-tutorial/robot-learning-harness-demo/outline/module_plan.yml",
+    "example/source-tutorial/robot-learning-harness-demo/sources/manifest.summary.yml",
+    "example/source-tutorial/robot-learning-harness-demo/evidence/TUTORIAL_SELFLOOP.md",
+    "example/source-tutorial/robot-learning-harness-demo/evidence/DELIVERY_EVIDENCE.md",
+    "example/source-tutorial/robot-learning-harness-demo/evidence/CONTRACT_REPORT.md",
+    "example/source-tutorial/robot-learning-harness-demo/evidence/RUN_AUDIT_SUMMARY.md",
+)
+
+HARNESS_SHOWCASE_ASSET_PATHS = (
+    "docs/assets/harness-showcase-lineage.svg",
+)
+
+AUTO_RESEARCH_REQUIRED_TERMS = (
+    "Auto Research",
+    "protocolizes work",
+    "externalizes state",
+    "audits evidence",
+    "reusable project knowledge",
+    "Abstract Layer Versus Implementation Layer",
+)

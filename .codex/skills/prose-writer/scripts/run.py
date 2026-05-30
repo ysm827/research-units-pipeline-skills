@@ -111,7 +111,7 @@ def main() -> int:
         newer = _newer_than(draft_path, deps)
         if newer:
             sample = ", ".join([p.relative_to(workspace).as_posix() for p in newer[:6]])
-            suffix = "..." if len(newer) > 6 else ""
+            suffix = f"; and {len(newer) - 6} more" if len(newer) > 6 else ""
             write_quality_report(
                 workspace=workspace,
                 unit_id=unit_id,

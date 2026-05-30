@@ -147,7 +147,7 @@ def main() -> int:
                     prov=RouteProvenance(
                         route=route,
                         source="arxiv",
-                        source_path="https://export.arxiv.org/api/query?id_list=...",
+                        source_path="https://export.arxiv.org/api/query?id_list=" + ",".join(pinned_ids),
                         imported_at=imported_at,
                     ),
                 )
@@ -890,13 +890,13 @@ def _render_report(
     for p in offline_inputs[:20]:
         lines.append(f"  - `{p}`")
     if len(offline_inputs) > 20:
-        lines.append("  - ...")
+        lines.append(f"  - and {len(offline_inputs) - 20} more")
 
     lines.append(f"- Snowball inputs: `{len(snowball_inputs)}`")
     for p in snowball_inputs[:20]:
         lines.append(f"  - `{p}`")
     if len(snowball_inputs) > 20:
-        lines.append("  - ...")
+        lines.append(f"  - and {len(snowball_inputs) - 20} more")
 
     lines.extend(["", "## Coverage buckets (by route)", "", "| route | unique_papers |", "|---|---:|"])
     for route, keys in sorted(route_to_keys.items(), key=lambda kv: (-len(kv[1]), kv[0])):

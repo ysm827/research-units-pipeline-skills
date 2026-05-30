@@ -1,7 +1,7 @@
 ---
 name: agent-survey-corpus
 description: |
-  Download a small corpus of open-access arXiv survey/review PDFs about LLM agents and extract text for style learning.
+  Download a small corpus of open-access arXiv survey/review PDFs about agentic systems and extract text for style learning.
   **Trigger**: agent survey corpus, ref corpus, download surveys, 学习综述写法, 下载 survey.
   **Use when**: you want to study how real agent surveys structure sections (6–8 H2), size subsections, and write evidence-backed comparisons.
   **Skip if**: you cannot download PDFs (no network) or you don't want local PDF files.

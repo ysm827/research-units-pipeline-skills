@@ -605,7 +605,7 @@ def main() -> int:
         if isinstance(allowed_sel, list) and any(str(k).strip() for k in allowed_sel):
             sel = [str(k).strip() for k in allowed_sel if str(k).strip()]
             sample = ", ".join(sel[:12])
-            suffix = "..." if len(sel) > 12 else ""
+            suffix = f"; and {len(sel) - 12} more" if len(sel) > 12 else ""
             lines.append(f"  - allowed_bibkeys_selected: {sample}{suffix}")
         if isinstance(allowed_map, list) and any(str(k).strip() for k in allowed_map):
             lines.append(f"  - allowed_bibkeys_mapped: {len([k for k in allowed_map if str(k).strip()])}")

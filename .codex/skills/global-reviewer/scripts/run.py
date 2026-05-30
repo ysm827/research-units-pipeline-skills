@@ -196,7 +196,8 @@ def _global_review_report(*, workspace: Path) -> str:
     lines.append("")
     lines.append("## B. Narrative and argument chain")
     if low_cites:
-        lines.append("- Subsections with <3 unique citations: " + ", ".join([f"`{t}`" for t in low_cites[:6]]) + (" ..." if len(low_cites) > 6 else ""))
+        suffix = f"; and {len(low_cites) - 6} more" if len(low_cites) > 6 else ""
+        lines.append("- Subsections with <3 unique citations: " + ", ".join([f"`{t}`" for t in low_cites[:6]]) + suffix)
     else:
         lines.append("- Citation density per subsection: looks OK (no <3-cite subsections detected).")
     if weakest:
@@ -213,7 +214,8 @@ def _global_review_report(*, workspace: Path) -> str:
     lines.append("")
     lines.append("## D. Citations and verifiability (claim -> evidence)")
     if missing_in_bib:
-        sample = ", ".join([f"`{k}`" for k in missing_in_bib[:8]]) + (" ..." if len(missing_in_bib) > 8 else "")
+        suffix = f"; and {len(missing_in_bib) - 8} more" if len(missing_in_bib) > 8 else ""
+        sample = ", ".join([f"`{k}`" for k in missing_in_bib[:8]]) + suffix
         lines.append(f"- Undefined citations (present in draft but missing in ref.bib): {sample}")
     else:
         lines.append("- Citation keys appear consistent with ref.bib (no undefined keys detected).")

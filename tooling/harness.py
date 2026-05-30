@@ -7,11 +7,84 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from tooling.common import UnitsTable, atomic_write_text, ensure_dir, now_iso_seconds, parse_semicolon_list
+from tooling.common import (
+    UnitsTable,
+    atomic_write_text,
+    ensure_dir,
+    now_iso_seconds,
+    parse_semicolon_list,
+    resolve_pipeline_spec_path,
+)
 
 
 VALID_STATUSES = {"TODO", "DOING", "DONE", "BLOCKED", "SKIP"}
 VALID_OWNERS = {"CODEX", "HUMAN"}
+DOCTOR_REPORT_SCHEMA = "doctor-report.v1"
+DOCTOR_REPORT_REQUIRED_KEYS = (
+    "schema",
+    "generated_at",
+    "workspace",
+    "repo",
+    "pipeline_lock",
+    "current_checkpoint",
+    "units_present",
+    "unit_status",
+    "next_runnable",
+    "harness_issues",
+    "remediation_summary",
+    "recent_reports",
+    "verdict",
+    "exit_code",
+)
+RUN_AUDIT_SCHEMA = "run-audit.v1"
+RUN_AUDIT_REQUIRED_KEYS = (
+    "schema",
+    "generated_at",
+    "workspace",
+    "repo",
+    "pipeline_lock",
+    "pipeline",
+    "current_checkpoint",
+    "run_ledger_files",
+    "unit_status",
+    "target_artifacts",
+    "unit_output_manifests",
+    "harness_issues",
+    "remediation_summary",
+    "recent_reports",
+    "verdict",
+    "exit_code",
+)
+RUN_AUDIT_LEDGER_KEYS = (
+    "PIPELINE.lock.md",
+    "GOAL.md",
+    "UNITS.csv",
+    "STATUS.md",
+    "CHECKPOINTS.md",
+    "DECISIONS.md",
+)
+RUN_AUDIT_DIFF_SCHEMA = "run-audit-diff.v1"
+RUN_AUDIT_DIFF_REQUIRED_KEYS = (
+    "schema",
+    "generated_at",
+    "before_path",
+    "after_path",
+    "before_schema",
+    "after_schema",
+    "before_workspace",
+    "after_workspace",
+    "before_pipeline",
+    "after_pipeline",
+    "before_verdict",
+    "after_verdict",
+    "unit_status_delta",
+    "target_artifact_changes",
+    "manifest_counts",
+    "harness_issue_counts",
+    "comparison_issues",
+    "verdict",
+    "exit_code",
+)
 
 
 @dataclass(frozen=True)
@@ -19,6 +92,69 @@ class HarnessIssue:
     level: str
     code: str
     message: str
+    remediation_category: str = ""
+    next_action: str = ""
+
+    def __post_init__(self) -> None:
+        default_category, default_action = ISSUE_REMEDIATION.get(
+            self.code,
+            (
+                "inspect_workspace_state",
+                "Inspect the workspace files named in the issue, then rerun `pipeline.py doctor`.",
+            ),
+        )
+        if not self.remediation_category:
+            object.__setattr__(self, "remediation_category", default_category)
+        if not self.next_action:
+            object.__setattr__(self, "next_action", default_action)
+
+
+ISSUE_REMEDIATION = {
+    "missing_units": (
+        "restore_workspace_contract",
+        "Create or restore `UNITS.csv` from the selected pipeline unit template, then rerun `pipeline.py doctor`.",
+    ),
+    "missing_units_field": (
+        "repair_units_contract",
+        "Regenerate `UNITS.csv` from the selected template or add the missing column before running units.",
+    ),
+    "missing_unit_id": (
+        "repair_units_contract",
+        "Assign a stable, unique `unit_id` to every row in `UNITS.csv`.",
+    ),
+    "duplicate_unit_id": (
+        "repair_units_contract",
+        "Rename duplicate unit ids so each row can be addressed independently.",
+    ),
+    "invalid_status": (
+        "repair_unit_status",
+        "Set the unit status to one of TODO, DOING, DONE, BLOCKED, or SKIP.",
+    ),
+    "invalid_owner": (
+        "repair_units_contract",
+        "Set the unit owner to CODEX or HUMAN, or update the harness if a new owner is intentional.",
+    ),
+    "human_checkpoint_missing": (
+        "record_human_checkpoint",
+        "Add the checkpoint id that should be approved in `DECISIONS.md` before this HUMAN unit can advance.",
+    ),
+    "missing_dependency": (
+        "repair_dependency_graph",
+        "Add or restore the dependency unit, or remove the stale `depends_on` reference from `UNITS.csv`.",
+    ),
+    "dependency_cycle": (
+        "repair_dependency_graph",
+        "Break the dependency cycle in `UNITS.csv` so at least one upstream unit can run first.",
+    ),
+    "missing_done_output": (
+        "repair_artifact_contract",
+        "Restore the missing artifact, rerun the producing unit, or move the unit out of DONE before continuing.",
+    ),
+    "missing_target_artifact": (
+        "repair_run_artifacts",
+        "Finish or rerun the producing unit for this target artifact before treating the workspace as complete.",
+    ),
+}
 
 
 def validate_units_table(table: UnitsTable) -> list[HarnessIssue]:
@@ -65,62 +201,681 @@ def validate_units_table(table: UnitsTable) -> list[HarnessIssue]:
     return issues
 
 
-def build_doctor_report(*, workspace: Path, repo_root: Path) -> tuple[int, str]:
+def build_doctor_payload(*, workspace: Path, repo_root: Path) -> tuple[int, dict[str, Any]]:
     units_path = workspace / "UNITS.csv"
+    lock_summary = _pipeline_lock_summary(workspace / "PIPELINE.lock.md")
+    checkpoint = _current_checkpoint(workspace / "STATUS.md")
+    issues: list[HarnessIssue] = []
+    unit_status: dict[str, int] = {}
+    next_runnable: dict[str, str] = {}
+    if not units_path.exists():
+        issues.append(HarnessIssue("ERROR", "missing_units", f"Missing `{units_path}`"))
+    else:
+        table = UnitsTable.load(units_path)
+        issues.extend(validate_units_table(table))
+        issues.extend(_workspace_artifact_issues(workspace=workspace, table=table))
+        counts = Counter(_status(row) or "<blank>" for row in table.rows)
+        unit_status = {status: counts[status] for status in sorted(counts)}
+        next_row = find_next_runnable(table)
+        if next_row is not None:
+            next_runnable = _next_runnable_record(next_row)
+
+    exit_code = 2 if any(issue.level == "ERROR" for issue in issues) else 0
+    verdict = "PASS" if exit_code == 0 else "ATTENTION"
+    remediation_counts = Counter(issue.remediation_category for issue in issues)
+    payload = {
+        "schema": DOCTOR_REPORT_SCHEMA,
+        "generated_at": now_iso_seconds(),
+        "workspace": str(workspace),
+        "repo": str(repo_root),
+        "pipeline_lock": lock_summary,
+        "current_checkpoint": checkpoint,
+        "units_present": units_path.exists(),
+        "unit_status": unit_status,
+        "next_runnable": next_runnable,
+        "harness_issues": [_issue_record(issue) for issue in issues],
+        "remediation_summary": {category: remediation_counts[category] for category in sorted(remediation_counts)},
+        "recent_reports": _recent_report_records(workspace),
+        "verdict": verdict,
+        "exit_code": exit_code,
+    }
+    return exit_code, payload
+
+
+def build_doctor_report(*, workspace: Path, repo_root: Path) -> tuple[int, str]:
+    exit_code, payload = build_doctor_payload(workspace=workspace, repo_root=repo_root)
+    return exit_code, render_doctor_report(payload)
+
+
+def render_doctor_report(payload: dict[str, Any]) -> str:
     lines = [
         "# Pipeline doctor",
         "",
-        f"- Workspace: `{workspace}`",
-        f"- Repo: `{repo_root}`",
+        f"- Workspace: `{payload.get('workspace')}`",
+        f"- Repo: `{payload.get('repo')}`",
     ]
 
-    lock_summary = _pipeline_lock_summary(workspace / "PIPELINE.lock.md")
+    lock_summary = str(payload.get("pipeline_lock") or "")
     if lock_summary:
         lines.append(f"- Pipeline lock: `{lock_summary}`")
     else:
         lines.append("- Pipeline lock: missing")
 
-    checkpoint = _current_checkpoint(workspace / "STATUS.md")
-    lines.append(f"- Current checkpoint: `{checkpoint}`")
+    lines.append(f"- Current checkpoint: `{payload.get('current_checkpoint')}`")
 
-    if not units_path.exists():
-        issue = HarnessIssue("ERROR", "missing_units", f"Missing `{units_path}`")
-        lines.extend(["", "## Harness issues", _format_issue(issue)])
-        return 2, "\n".join(lines).rstrip() + "\n"
+    if payload.get("units_present"):
+        lines.extend(["", "## Unit status"])
+        unit_status = payload.get("unit_status") or {}
+        if unit_status:
+            for status, count in unit_status.items():
+                lines.append(f"- {status}: {count}")
+        else:
+            lines.append("- No units found")
 
-    table = UnitsTable.load(units_path)
-    issues = validate_units_table(table)
-    issues.extend(_workspace_artifact_issues(workspace=workspace, table=table))
-
-    lines.extend(["", "## Unit status"])
-    counts = Counter(_status(row) or "<blank>" for row in table.rows)
-    if counts:
-        for status in sorted(counts):
-            lines.append(f"- {status}: {counts[status]}")
-    else:
-        lines.append("- No units found")
-
-    next_row = find_next_runnable(table)
-    lines.extend(["", "## Next runnable"])
-    if next_row is None:
-        lines.append("- No runnable unit found")
-    else:
-        unit_id = _unit_id(next_row)
-        title = str(next_row.get("title") or "").strip() or "(untitled)"
-        skill = str(next_row.get("skill") or "").strip() or "(no skill)"
-        lines.append(f"- Next runnable: `{unit_id}` {title} (`{skill}`)")
+        lines.extend(["", "## Next runnable"])
+        next_runnable = payload.get("next_runnable") or {}
+        if next_runnable:
+            unit_id = str(next_runnable.get("unit_id") or "")
+            title = str(next_runnable.get("title") or "(untitled)")
+            skill = str(next_runnable.get("skill") or "(no skill)")
+            lines.append(f"- Next runnable: `{unit_id}` {title} (`{skill}`)")
+        else:
+            lines.append("- No runnable unit found")
 
     lines.extend(["", "## Harness issues"])
+    issues = payload.get("harness_issues") or []
     if issues:
         for issue in issues:
-            lines.append(_format_issue(issue))
+            lines.append(_format_issue_record(issue))
+        lines.extend(["", "## Remediation summary"])
+        for category, count in (payload.get("remediation_summary") or {}).items():
+            lines.append(f"- `{category}`: {count}")
     else:
         lines.append("- No harness issues")
 
-    lines.extend(_recent_report_summaries(workspace))
+    lines.extend(["", "## Recent harness reports"])
+    recent_reports = payload.get("recent_reports") or []
+    if not recent_reports:
+        lines.append("- No recent harness reports found")
+    else:
+        for report in recent_reports:
+            preview = str(report.get("preview") or "")
+            suffix = f": {preview}" if preview else ""
+            lines.append(f"- `{report.get('path')}`{suffix}")
 
+    return "\n".join(lines).rstrip() + "\n"
+
+
+def write_doctor_report(*, workspace: Path, report: str) -> Path:
+    path = workspace / "output" / "DOCTOR_REPORT.md"
+    atomic_write_text(path, report)
+    return path
+
+
+def write_doctor_json(*, workspace: Path, payload: dict[str, Any]) -> Path:
+    path = workspace / "output" / "DOCTOR_REPORT.json"
+    atomic_write_text(path, json.dumps(payload, ensure_ascii=False, indent=2, sort_keys=True) + "\n")
+    return path
+
+
+def validate_doctor_payload(payload: dict[str, Any]) -> list[str]:
+    """Validate the stable shape future tooling can rely on for doctor-report.v1."""
+    issues = _validate_payload_header(
+        payload,
+        expected_schema=DOCTOR_REPORT_SCHEMA,
+        required_keys=DOCTOR_REPORT_REQUIRED_KEYS,
+        string_keys=("generated_at", "workspace", "repo", "pipeline_lock", "current_checkpoint", "verdict"),
+        integer_keys=("exit_code",),
+        boolean_keys=("units_present",),
+    )
+    if not isinstance(payload, dict):
+        return issues
+
+    _validate_int_mapping(payload, key="unit_status", issues=issues)
+    _validate_int_mapping(payload, key="remediation_summary", issues=issues)
+
+    next_runnable = _validate_object_field(payload, key="next_runnable", issues=issues)
+    if next_runnable is not None:
+        for key in ("unit_id", "title", "skill"):
+            if key in next_runnable and not isinstance(next_runnable.get(key), str):
+                issues.append(f"`next_runnable.{key}` must be a string")
+
+    _validate_issue_records(payload, issues=issues)
+    _validate_recent_reports(payload, issues=issues)
+    return issues
+
+
+def validate_run_audit_payload(payload: dict[str, Any]) -> list[str]:
+    """Validate the stable shape future tooling can rely on for run-audit.v1."""
+    issues = _validate_payload_header(
+        payload,
+        expected_schema=RUN_AUDIT_SCHEMA,
+        required_keys=RUN_AUDIT_REQUIRED_KEYS,
+        string_keys=(
+            "generated_at",
+            "workspace",
+            "repo",
+            "pipeline_lock",
+            "pipeline",
+            "current_checkpoint",
+            "verdict",
+        ),
+        integer_keys=("exit_code",),
+    )
+    if not isinstance(payload, dict):
+        return issues
+
+    run_ledger_files = _validate_object_field(payload, key="run_ledger_files", issues=issues)
+    if run_ledger_files is not None:
+        for key in RUN_AUDIT_LEDGER_KEYS:
+            if key not in run_ledger_files:
+                issues.append(f"`run_ledger_files.{key}` is missing")
+            elif not isinstance(run_ledger_files.get(key), bool):
+                issues.append(f"`run_ledger_files.{key}` must be a boolean")
+
+    _validate_int_mapping(payload, key="unit_status", issues=issues)
+    _validate_int_mapping(payload, key="remediation_summary", issues=issues)
+
+    target_artifacts = _validate_list_field(payload, key="target_artifacts", issues=issues)
+    if target_artifacts is not None:
+        for idx, item in enumerate(target_artifacts):
+            if not isinstance(item, dict):
+                issues.append(f"`target_artifacts[{idx}]` must be an object")
+                continue
+            if not isinstance(item.get("path"), str):
+                issues.append(f"`target_artifacts[{idx}].path` must be a string")
+            if not isinstance(item.get("exists"), bool):
+                issues.append(f"`target_artifacts[{idx}].exists` must be a boolean")
+
+    manifests = _validate_object_field(payload, key="unit_output_manifests", issues=issues)
+    if manifests is not None:
+        if not isinstance(manifests.get("count"), int):
+            issues.append("`unit_output_manifests.count` must be an integer")
+        by_status = manifests.get("by_status")
+        if not isinstance(by_status, dict):
+            issues.append("`unit_output_manifests.by_status` must be an object")
+        else:
+            for status, count in by_status.items():
+                if not isinstance(status, str):
+                    issues.append("`unit_output_manifests.by_status` keys must be strings")
+                if not isinstance(count, int):
+                    issues.append(f"`unit_output_manifests.by_status.{status}` must be an integer")
+        if not isinstance(manifests.get("latest"), dict):
+            issues.append("`unit_output_manifests.latest` must be an object")
+        records = manifests.get("records")
+        if not isinstance(records, list):
+            issues.append("`unit_output_manifests.records` must be a list")
+        else:
+            for idx, record in enumerate(records):
+                if not isinstance(record, dict):
+                    issues.append(f"`unit_output_manifests.records[{idx}]` must be an object")
+
+    _validate_issue_records(payload, issues=issues)
+    _validate_recent_reports(payload, issues=issues)
+    return issues
+
+
+def validate_run_audit_diff_payload(payload: dict[str, Any]) -> list[str]:
+    """Validate the stable shape future tooling can rely on for run-audit-diff.v1."""
+    issues = _validate_payload_header(
+        payload,
+        expected_schema=RUN_AUDIT_DIFF_SCHEMA,
+        required_keys=RUN_AUDIT_DIFF_REQUIRED_KEYS,
+        string_keys=(
+            "generated_at",
+            "before_path",
+            "after_path",
+            "before_schema",
+            "after_schema",
+            "before_workspace",
+            "after_workspace",
+            "before_pipeline",
+            "after_pipeline",
+            "before_verdict",
+            "after_verdict",
+            "verdict",
+        ),
+        integer_keys=("exit_code",),
+    )
+    if not isinstance(payload, dict):
+        return issues
+
+    _validate_int_mapping(payload, key="unit_status_delta", issues=issues)
+    _validate_count_delta(payload, key="manifest_counts", issues=issues)
+    _validate_count_delta(payload, key="harness_issue_counts", issues=issues)
+
+    changes = _validate_list_field(payload, key="target_artifact_changes", issues=issues)
+    if changes is not None:
+        for idx, item in enumerate(changes):
+            if not isinstance(item, dict):
+                issues.append(f"`target_artifact_changes[{idx}]` must be an object")
+                continue
+            if not isinstance(item.get("path"), str):
+                issues.append(f"`target_artifact_changes[{idx}].path` must be a string")
+            for key in ("before_exists", "after_exists"):
+                if item.get(key) is not None and not isinstance(item.get(key), bool):
+                    issues.append(f"`target_artifact_changes[{idx}].{key}` must be a boolean or null")
+            if not isinstance(item.get("change"), str):
+                issues.append(f"`target_artifact_changes[{idx}].change` must be a string")
+
+    comparison_issues = _validate_list_field(payload, key="comparison_issues", issues=issues)
+    if comparison_issues is not None:
+        for idx, item in enumerate(comparison_issues):
+            if not isinstance(item, str):
+                issues.append(f"`comparison_issues[{idx}]` must be a string")
+
+    return issues
+
+
+def _validate_payload_header(
+    payload: Any,
+    *,
+    expected_schema: str,
+    required_keys: tuple[str, ...],
+    string_keys: tuple[str, ...] = (),
+    integer_keys: tuple[str, ...] = (),
+    boolean_keys: tuple[str, ...] = (),
+) -> list[str]:
+    issues: list[str] = []
+    if not isinstance(payload, dict):
+        return ["payload must be a JSON object"]
+
+    for key in required_keys:
+        if key not in payload:
+            issues.append(f"missing top-level key `{key}`")
+
+    schema = payload.get("schema")
+    if schema != expected_schema:
+        issues.append(f"`schema` must be `{expected_schema}`")
+
+    for key in string_keys:
+        if key in payload and not isinstance(payload.get(key), str):
+            issues.append(f"`{key}` must be a string")
+    for key in integer_keys:
+        if key in payload and not isinstance(payload.get(key), int):
+            issues.append(f"`{key}` must be an integer")
+    for key in boolean_keys:
+        if key in payload and not isinstance(payload.get(key), bool):
+            issues.append(f"`{key}` must be a boolean")
+    return issues
+
+
+def _validate_object_field(payload: dict[str, Any], *, key: str, issues: list[str]) -> dict[str, Any] | None:
+    value = payload.get(key)
+    if not isinstance(value, dict):
+        issues.append(f"`{key}` must be an object")
+        return None
+    return value
+
+
+def _validate_list_field(payload: dict[str, Any], *, key: str, issues: list[str]) -> list[Any] | None:
+    value = payload.get(key)
+    if not isinstance(value, list):
+        issues.append(f"`{key}` must be a list")
+        return None
+    return value
+
+
+def _validate_int_mapping(payload: dict[str, Any], *, key: str, issues: list[str]) -> None:
+    value = payload.get(key)
+    if not isinstance(value, dict):
+        issues.append(f"`{key}` must be an object")
+        return
+    for item_key, item_value in value.items():
+        if not isinstance(item_key, str):
+            issues.append(f"`{key}` keys must be strings")
+        if not isinstance(item_value, int):
+            issues.append(f"`{key}.{item_key}` must be an integer")
+
+
+def _validate_count_delta(payload: dict[str, Any], *, key: str, issues: list[str]) -> None:
+    value = _validate_object_field(payload, key=key, issues=issues)
+    if value is None:
+        return
+    for item_key in ("before", "after", "delta"):
+        if not isinstance(value.get(item_key), int):
+            issues.append(f"`{key}.{item_key}` must be an integer")
+
+
+def _validate_issue_records(payload: dict[str, Any], *, issues: list[str]) -> None:
+    records = payload.get("harness_issues")
+    if not isinstance(records, list):
+        issues.append("`harness_issues` must be a list")
+        return
+    required = ("level", "code", "message", "remediation_category", "next_action")
+    for idx, record in enumerate(records):
+        if not isinstance(record, dict):
+            issues.append(f"`harness_issues[{idx}]` must be an object")
+            continue
+        for key in required:
+            if not isinstance(record.get(key), str):
+                issues.append(f"`harness_issues[{idx}].{key}` must be a string")
+
+
+def _validate_recent_reports(payload: dict[str, Any], *, issues: list[str]) -> None:
+    records = payload.get("recent_reports")
+    if not isinstance(records, list):
+        issues.append("`recent_reports` must be a list")
+        return
+    for idx, record in enumerate(records):
+        if not isinstance(record, dict):
+            issues.append(f"`recent_reports[{idx}]` must be an object")
+            continue
+        if not isinstance(record.get("path"), str):
+            issues.append(f"`recent_reports[{idx}].path` must be a string")
+        if not isinstance(record.get("preview"), str):
+            issues.append(f"`recent_reports[{idx}].preview` must be a string")
+
+
+def build_run_audit_payload(*, workspace: Path, repo_root: Path) -> tuple[int, dict[str, Any]]:
+    units_path = workspace / "UNITS.csv"
+    spec = _load_locked_pipeline_spec(workspace=workspace, repo_root=repo_root)
+    lock_summary = _pipeline_lock_summary(workspace / "PIPELINE.lock.md")
+    generated_at = now_iso_seconds()
+    checkpoint = _current_checkpoint(workspace / "STATUS.md")
+    ledger_files: dict[str, bool] = {}
+    for relpath in (
+        "PIPELINE.lock.md",
+        "GOAL.md",
+        "UNITS.csv",
+        "STATUS.md",
+        "CHECKPOINTS.md",
+        "DECISIONS.md",
+    ):
+        ledger_files[relpath] = (workspace / relpath).exists()
+
+    issues: list[HarnessIssue] = []
+    unit_status: dict[str, int] = {}
+    if not units_path.exists():
+        issues.append(HarnessIssue("ERROR", "missing_units", f"Missing `{units_path}`"))
+    else:
+        table = UnitsTable.load(units_path)
+        issues.extend(validate_units_table(table))
+        issues.extend(_workspace_artifact_issues(workspace=workspace, table=table))
+        counts = Counter(_status(row) or "<blank>" for row in table.rows)
+        unit_status = {status: counts[status] for status in sorted(counts)}
+
+    target_artifacts = tuple(spec.target_artifacts) if spec is not None else ()
+    target_records: list[dict[str, Any]] = []
+    for relpath in target_artifacts:
+        exists = (workspace / relpath).exists()
+        target_records.append({"path": relpath, "exists": exists})
+        if not exists:
+            issues.append(HarnessIssue("ERROR", "missing_target_artifact", f"Target artifact `{relpath}` is missing"))
+
+    manifests = _unit_manifest_records(workspace)
     exit_code = 2 if any(issue.level == "ERROR" for issue in issues) else 0
-    return exit_code, "\n".join(lines).rstrip() + "\n"
+    verdict = "PASS" if exit_code == 0 else "ATTENTION"
+    manifest_status_counts = Counter(str(item.get("status") or "<blank>") for item in manifests)
+    remediation_counts = Counter(issue.remediation_category for issue in issues)
+    payload = {
+        "schema": RUN_AUDIT_SCHEMA,
+        "generated_at": generated_at,
+        "workspace": str(workspace),
+        "repo": str(repo_root),
+        "pipeline_lock": lock_summary,
+        "pipeline": spec.name if spec is not None else "",
+        "current_checkpoint": checkpoint,
+        "run_ledger_files": ledger_files,
+        "unit_status": unit_status,
+        "target_artifacts": target_records,
+        "unit_output_manifests": {
+            "count": len(manifests),
+            "by_status": {status: manifest_status_counts[status] for status in sorted(manifest_status_counts)},
+            "latest": _manifest_summary(manifests[-1]) if manifests else {},
+            "records": [_manifest_summary(record) for record in manifests],
+        },
+        "harness_issues": [_issue_record(issue) for issue in issues],
+        "remediation_summary": {category: remediation_counts[category] for category in sorted(remediation_counts)},
+        "recent_reports": _recent_report_records(workspace),
+        "verdict": verdict,
+        "exit_code": exit_code,
+    }
+    return exit_code, payload
+
+
+def build_run_audit_report(*, workspace: Path, repo_root: Path) -> tuple[int, str]:
+    exit_code, payload = build_run_audit_payload(workspace=workspace, repo_root=repo_root)
+    return exit_code, render_run_audit_report(payload)
+
+
+def render_run_audit_report(payload: dict[str, Any]) -> str:
+    lines = [
+        "# Run audit",
+        "",
+        f"- Workspace: `{payload.get('workspace')}`",
+        f"- Repo: `{payload.get('repo')}`",
+        f"- Generated at: `{payload.get('generated_at')}`",
+        f"- Pipeline lock: `{payload.get('pipeline_lock')}`" if payload.get("pipeline_lock") else "- Pipeline lock: missing",
+        f"- Pipeline: `{payload.get('pipeline')}`" if payload.get("pipeline") else "- Pipeline: unknown",
+        f"- Current checkpoint: `{payload.get('current_checkpoint')}`",
+        f"- JSON sidecar: `output/RUN_AUDIT.json`",
+    ]
+
+    lines.extend(["", "## Run ledger files"])
+    for relpath, exists in (payload.get("run_ledger_files") or {}).items():
+        status = "present" if exists else "missing"
+        lines.append(f"- `{relpath}`: {status}")
+
+    lines.extend(["", "## Unit status"])
+    unit_status = payload.get("unit_status") or {}
+    if unit_status:
+        for status, count in unit_status.items():
+            lines.append(f"- {status}: {count}")
+    else:
+        if not (payload.get("run_ledger_files") or {}).get("UNITS.csv"):
+            lines.append("- UNITS.csv missing")
+        else:
+            lines.append("- No units found")
+
+    target_artifacts = payload.get("target_artifacts") or []
+    lines.extend(["", "## Target artifacts"])
+    if not target_artifacts:
+        lines.append("- No target artifacts declared or pipeline spec could not be resolved")
+    else:
+        for item in target_artifacts:
+            relpath = str(item.get("path") or "")
+            status = "present" if item.get("exists") else "missing"
+            lines.append(f"- `{relpath}`: {status}")
+
+    manifest_summary = payload.get("unit_output_manifests") or {}
+    lines.extend(["", "## Unit output manifests"])
+    if not manifest_summary.get("count"):
+        lines.append("- No unit output manifests found")
+    else:
+        lines.append(f"- Manifests: {manifest_summary.get('count')}")
+        for status, count in (manifest_summary.get("by_status") or {}).items():
+            lines.append(f"- {status}: {count}")
+        latest = manifest_summary.get("latest") or {}
+        if latest:
+            latest_path = str(latest.get("path") or "")
+            latest_unit = str(latest.get("unit_id") or "?")
+            latest_skill = str(latest.get("skill") or "?")
+            latest_status = str(latest.get("status") or "?")
+            lines.append(f"- Latest: `{latest_path}` (`{latest_unit}` `{latest_skill}` {latest_status})")
+
+    lines.extend(["", "## Harness issues"])
+    issues = payload.get("harness_issues") or []
+    if issues:
+        for issue in issues:
+            lines.append(_format_issue_record(issue))
+        lines.extend(["", "## Remediation summary"])
+        for category, count in (payload.get("remediation_summary") or {}).items():
+            lines.append(f"- `{category}`: {count}")
+    else:
+        lines.append("- No harness issues")
+
+    lines.extend(["", "## Recent harness reports"])
+    recent_reports = payload.get("recent_reports") or []
+    if not recent_reports:
+        lines.append("- No recent harness reports found")
+    else:
+        for report in recent_reports:
+            preview = str(report.get("preview") or "")
+            suffix = f": {preview}" if preview else ""
+            lines.append(f"- `{report.get('path')}`{suffix}")
+
+    lines.extend(["", "## Audit verdict", f"- {payload.get('verdict') or 'ATTENTION'}"])
+    return "\n".join(lines).rstrip() + "\n"
+
+
+def write_run_audit_report(*, workspace: Path, report: str) -> Path:
+    path = workspace / "output" / "RUN_AUDIT.md"
+    atomic_write_text(path, report)
+    return path
+
+
+def write_run_audit_json(*, workspace: Path, payload: dict[str, Any]) -> Path:
+    path = workspace / "output" / "RUN_AUDIT.json"
+    atomic_write_text(path, json.dumps(payload, ensure_ascii=False, indent=2, sort_keys=True) + "\n")
+    return path
+
+
+def load_run_audit_payload(path: Path) -> dict[str, Any]:
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except FileNotFoundError as exc:
+        raise ValueError(f"Missing run audit payload: {path}") from exc
+    except json.JSONDecodeError as exc:
+        raise ValueError(f"Invalid JSON in run audit payload `{path}`: {exc}") from exc
+
+    issues = validate_run_audit_payload(payload)
+    if issues:
+        joined = "; ".join(issues)
+        raise ValueError(f"`{path}` is not a valid {RUN_AUDIT_SCHEMA} payload: {joined}")
+    return payload
+
+
+def build_run_audit_diff_payload(
+    *,
+    before_path: Path,
+    before_payload: dict[str, Any],
+    after_path: Path,
+    after_payload: dict[str, Any],
+) -> tuple[int, dict[str, Any]]:
+    unit_status_delta = _int_mapping_delta(
+        before_payload.get("unit_status") or {},
+        after_payload.get("unit_status") or {},
+    )
+    target_changes = _target_artifact_changes(before_payload, after_payload)
+    before_manifest_count = _manifest_count(before_payload)
+    after_manifest_count = _manifest_count(after_payload)
+    before_issue_count = len(before_payload.get("harness_issues") or [])
+    after_issue_count = len(after_payload.get("harness_issues") or [])
+
+    comparison_issues: list[str] = []
+    if before_payload.get("pipeline") != after_payload.get("pipeline"):
+        comparison_issues.append(
+            f"Pipeline changed from `{before_payload.get('pipeline')}` to `{after_payload.get('pipeline')}`"
+        )
+
+    regressed_artifacts = [
+        item["path"]
+        for item in target_changes
+        if item.get("change") in {"became_missing", "added_missing"}
+    ]
+    for relpath in regressed_artifacts:
+        comparison_issues.append(f"Target artifact `{relpath}` is missing in the after audit")
+
+    after_verdict = str(after_payload.get("verdict") or "")
+    exit_code = 0 if after_verdict == "PASS" and not comparison_issues else 2
+    verdict = "PASS" if exit_code == 0 else "ATTENTION"
+    payload = {
+        "schema": RUN_AUDIT_DIFF_SCHEMA,
+        "generated_at": now_iso_seconds(),
+        "before_path": str(before_path),
+        "after_path": str(after_path),
+        "before_schema": str(before_payload.get("schema") or ""),
+        "after_schema": str(after_payload.get("schema") or ""),
+        "before_workspace": str(before_payload.get("workspace") or ""),
+        "after_workspace": str(after_payload.get("workspace") or ""),
+        "before_pipeline": str(before_payload.get("pipeline") or ""),
+        "after_pipeline": str(after_payload.get("pipeline") or ""),
+        "before_verdict": str(before_payload.get("verdict") or ""),
+        "after_verdict": after_verdict,
+        "unit_status_delta": unit_status_delta,
+        "target_artifact_changes": target_changes,
+        "manifest_counts": {
+            "before": before_manifest_count,
+            "after": after_manifest_count,
+            "delta": after_manifest_count - before_manifest_count,
+        },
+        "harness_issue_counts": {
+            "before": before_issue_count,
+            "after": after_issue_count,
+            "delta": after_issue_count - before_issue_count,
+        },
+        "comparison_issues": comparison_issues,
+        "verdict": verdict,
+        "exit_code": exit_code,
+    }
+    return exit_code, payload
+
+
+def render_run_audit_diff_report(payload: dict[str, Any]) -> str:
+    lines = [
+        "# Run audit diff",
+        "",
+        f"- Before: `{payload.get('before_path')}`",
+        f"- After: `{payload.get('after_path')}`",
+        f"- Pipeline: `{payload.get('before_pipeline')}` -> `{payload.get('after_pipeline')}`",
+        f"- Workspace: `{payload.get('before_workspace')}` -> `{payload.get('after_workspace')}`",
+        f"- Verdict: `{payload.get('before_verdict')}` -> `{payload.get('after_verdict')}`",
+    ]
+
+    lines.extend(["", "## Unit status delta"])
+    unit_status_delta = payload.get("unit_status_delta") or {}
+    if unit_status_delta:
+        for status, delta in unit_status_delta.items():
+            sign = "+" if int(delta) > 0 else ""
+            lines.append(f"- {status}: {sign}{delta}")
+    else:
+        lines.append("- No unit status changes")
+
+    lines.extend(["", "## Target artifact changes"])
+    changes = payload.get("target_artifact_changes") or []
+    if not changes:
+        lines.append("- No target artifact changes")
+    else:
+        for item in changes:
+            lines.append(
+                f"- `{item.get('path')}`: {item.get('change')} "
+                f"({item.get('before_exists')} -> {item.get('after_exists')})"
+            )
+
+    manifest_counts = payload.get("manifest_counts") or {}
+    issue_counts = payload.get("harness_issue_counts") or {}
+    lines.extend(
+        [
+            "",
+            "## Run-level counters",
+            _format_count_delta("Unit output manifests", manifest_counts),
+            _format_count_delta("Harness issues", issue_counts),
+        ]
+    )
+
+    lines.extend(["", "## Comparison issues"])
+    comparison_issues = payload.get("comparison_issues") or []
+    if comparison_issues:
+        for issue in comparison_issues:
+            lines.append(f"- {issue}")
+    else:
+        lines.append("- No comparison issues")
+
+    lines.extend(["", "## Diff verdict", f"- {payload.get('verdict') or 'ATTENTION'}"])
+    return "\n".join(lines).rstrip() + "\n"
+
+
+def write_run_audit_diff_report(*, output_dir: Path, report: str) -> Path:
+    path = output_dir / "RUN_AUDIT_DIFF.md"
+    atomic_write_text(path, report)
+    return path
+
+
+def write_run_audit_diff_json(*, output_dir: Path, payload: dict[str, Any]) -> Path:
+    path = output_dir / "RUN_AUDIT_DIFF.json"
+    atomic_write_text(path, json.dumps(payload, ensure_ascii=False, indent=2, sort_keys=True) + "\n")
+    return path
 
 
 def find_next_runnable(table: UnitsTable) -> dict[str, str] | None:
@@ -235,6 +990,79 @@ def _artifact_record(*, workspace: Path, relpath: str) -> dict[str, Any]:
     return record
 
 
+def _int_mapping_delta(before: dict[str, Any], after: dict[str, Any]) -> dict[str, int]:
+    keys = sorted(set(before).union(after))
+    delta: dict[str, int] = {}
+    for key in keys:
+        before_value = before.get(key, 0)
+        after_value = after.get(key, 0)
+        if not isinstance(before_value, int) or not isinstance(after_value, int):
+            continue
+        change = after_value - before_value
+        if change:
+            delta[str(key)] = change
+    return delta
+
+
+def _target_artifact_changes(before_payload: dict[str, Any], after_payload: dict[str, Any]) -> list[dict[str, Any]]:
+    before = _target_artifact_map(before_payload)
+    after = _target_artifact_map(after_payload)
+    records: list[dict[str, Any]] = []
+    for relpath in sorted(set(before).union(after)):
+        before_exists = before.get(relpath)
+        after_exists = after.get(relpath)
+        change = _target_artifact_change(before_exists, after_exists)
+        if change.startswith("unchanged_"):
+            continue
+        records.append(
+            {
+                "path": relpath,
+                "before_exists": before_exists,
+                "after_exists": after_exists,
+                "change": change,
+            }
+        )
+    return records
+
+
+def _target_artifact_map(payload: dict[str, Any]) -> dict[str, bool]:
+    records: dict[str, bool] = {}
+    for item in payload.get("target_artifacts") or []:
+        if not isinstance(item, dict):
+            continue
+        relpath = item.get("path")
+        exists = item.get("exists")
+        if isinstance(relpath, str) and isinstance(exists, bool):
+            records[relpath] = exists
+    return records
+
+
+def _target_artifact_change(before_exists: bool | None, after_exists: bool | None) -> str:
+    if before_exists is None:
+        return "added_present" if after_exists else "added_missing"
+    if after_exists is None:
+        return "removed_present" if before_exists else "removed_missing"
+    if before_exists and after_exists:
+        return "unchanged_present"
+    if not before_exists and not after_exists:
+        return "unchanged_missing"
+    return "became_present" if after_exists else "became_missing"
+
+
+def _manifest_count(payload: dict[str, Any]) -> int:
+    manifests = payload.get("unit_output_manifests") or {}
+    count = manifests.get("count") if isinstance(manifests, dict) else 0
+    return count if isinstance(count, int) else 0
+
+
+def _format_count_delta(label: str, counts: dict[str, Any]) -> str:
+    before = int(counts.get("before") or 0)
+    after = int(counts.get("after") or 0)
+    delta = int(counts.get("delta") or 0)
+    sign = "+" if delta > 0 else ""
+    return f"- {label}: {before} -> {after} ({sign}{delta})"
+
+
 def _recent_report_summaries(workspace: Path) -> list[str]:
     report_paths = [
         workspace / "output" / "RUN_ERRORS.md",
@@ -275,6 +1103,35 @@ def _pipeline_lock_summary(path: Path) -> str:
     return ""
 
 
+def _pipeline_lock_fields(path: Path) -> dict[str, str]:
+    fields: dict[str, str] = {}
+    if not path.exists():
+        return fields
+    for raw_line in path.read_text(encoding="utf-8", errors="ignore").splitlines():
+        if ":" not in raw_line:
+            continue
+        key, value = raw_line.split(":", 1)
+        key = key.strip()
+        if key:
+            fields[key] = value.strip()
+    return fields
+
+
+def _load_locked_pipeline_spec(*, workspace: Path, repo_root: Path):
+    from tooling.pipeline_spec import PipelineSpec
+
+    pipeline_value = _pipeline_lock_fields(workspace / "PIPELINE.lock.md").get("pipeline", "")
+    if not pipeline_value:
+        return None
+    spec_path = resolve_pipeline_spec_path(repo_root=repo_root, pipeline_value=pipeline_value)
+    if spec_path is None:
+        return None
+    try:
+        return PipelineSpec.load(spec_path)
+    except Exception:
+        return None
+
+
 def _current_checkpoint(path: Path) -> str:
     if not path.exists():
         return "unknown"
@@ -293,7 +1150,83 @@ def _current_checkpoint(path: Path) -> str:
 
 
 def _format_issue(issue: HarnessIssue) -> str:
-    return f"- {issue.level} `{issue.code}`: {issue.message}"
+    return (
+        f"- {issue.level} `{issue.code}`: {issue.message}\n"
+        f"  Remediation: `{issue.remediation_category}`\n"
+        f"  Next action: {issue.next_action}"
+    )
+
+
+def _issue_record(issue: HarnessIssue) -> dict[str, str]:
+    return {
+        "level": issue.level,
+        "code": issue.code,
+        "message": issue.message,
+        "remediation_category": issue.remediation_category,
+        "next_action": issue.next_action,
+    }
+
+
+def _next_runnable_record(row: dict[str, str]) -> dict[str, str]:
+    return {
+        "unit_id": _unit_id(row),
+        "title": str(row.get("title") or "").strip() or "(untitled)",
+        "skill": str(row.get("skill") or "").strip() or "(no skill)",
+    }
+
+
+def _format_issue_record(issue: dict[str, Any]) -> str:
+    return (
+        f"- {issue.get('level')} `{issue.get('code')}`: {issue.get('message')}\n"
+        f"  Remediation: `{issue.get('remediation_category')}`\n"
+        f"  Next action: {issue.get('next_action')}"
+    )
+
+
+def _manifest_summary(record: dict[str, Any]) -> dict[str, Any]:
+    outputs = record.get("outputs") if isinstance(record.get("outputs"), list) else []
+    return {
+        "path": str(record.get("_relpath") or ""),
+        "unit_id": str(record.get("unit_id") or ""),
+        "skill": str(record.get("skill") or ""),
+        "status": str(record.get("status") or ""),
+        "exit_code": record.get("exit_code"),
+        "generated_at": str(record.get("generated_at") or ""),
+        "outputs": outputs,
+    }
+
+
+def _unit_manifest_records(workspace: Path) -> list[dict[str, Any]]:
+    records: list[dict[str, Any]] = []
+    for path in sorted((workspace / "output" / "unit_logs").glob("*.manifest.json")):
+        try:
+            record = json.loads(path.read_text(encoding="utf-8"))
+        except Exception:
+            continue
+        if not isinstance(record, dict):
+            continue
+        record["_relpath"] = str(path.relative_to(workspace))
+        records.append(record)
+    return records
+
+
+def _recent_report_records(workspace: Path) -> list[dict[str, str]]:
+    report_paths = [
+        workspace / "output" / "RUN_ERRORS.md",
+        workspace / "output" / "QUALITY_GATE.md",
+        workspace / "output" / "CONTRACT_REPORT.md",
+    ]
+    records: list[dict[str, str]] = []
+    for path in report_paths:
+        if not path.exists() or path.stat().st_size == 0:
+            continue
+        records.append(
+            {
+                "path": str(path.relative_to(workspace)),
+                "preview": _first_nonempty_content_line(path),
+            }
+        )
+    return records
 
 
 def _unit_id(row: dict[str, str]) -> str:
