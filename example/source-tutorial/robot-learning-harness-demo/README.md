@@ -35,6 +35,7 @@ status are summarized in `evidence/DELIVERY_EVIDENCE.md`.
 | Did the tutorial self-check pass? | `evidence/TUTORIAL_SELFLOOP.md` |
 | Did article and slide delivery succeed? | `evidence/DELIVERY_EVIDENCE.md` |
 | Did the artifact contract pass? | `evidence/CONTRACT_REPORT.md` |
+| What would a portable handoff manifest index first? | `evidence/ARTIFACT_PACK_EXCERPT.md`, `evidence/ARTIFACT_PACK_EXCERPT.tsv` |
 | Which workflow protocol defines the target artifacts? | `pipelines/source-tutorial.pipeline.md` |
 
 ## Why This Example Exists
@@ -49,6 +50,7 @@ source set
 -> tutorial article
 -> article PDF + Beamer slides
 -> self-check + contract evidence
+-> run audit + artifact-pack excerpt
 ```
 
 That makes it a better first exhibit for readers who want to see the final

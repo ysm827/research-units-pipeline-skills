@@ -246,6 +246,16 @@ def _write_minimal_showcase_audit_repo(repo_root: Path) -> None:
         "Audit verdict: PASS\n",
         encoding="utf-8",
     )
+    (tutorial_root / "evidence" / "ARTIFACT_PACK_EXCERPT.md").write_text(
+        "# Artifact Pack Excerpt\n\nartifact-pack.v1\n\ntarget_artifact\nunit_output\nharness_report\n",
+        encoding="utf-8",
+    )
+    (tutorial_root / "evidence" / "ARTIFACT_PACK_EXCERPT.tsv").write_text(
+        "category\tpath\texists\trole\n"
+        "target_artifact\toutput/TUTORIAL_EXCERPT.md\ttrue\tfinal tutorial excerpt\n"
+        "harness_report\tevidence/RUN_AUDIT_SUMMARY.md\ttrue\trun audit evidence\n",
+        encoding="utf-8",
+    )
 
 
 def _readme_with_harness_links() -> str:

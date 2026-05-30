@@ -342,6 +342,8 @@ HARNESS_SHOWCASE_FIXTURE_PATHS = (
     "example/source-tutorial/robot-learning-harness-demo/evidence/DELIVERY_EVIDENCE.md",
     "example/source-tutorial/robot-learning-harness-demo/evidence/CONTRACT_REPORT.md",
     "example/source-tutorial/robot-learning-harness-demo/evidence/RUN_AUDIT_SUMMARY.md",
+    "example/source-tutorial/robot-learning-harness-demo/evidence/ARTIFACT_PACK_EXCERPT.md",
+    "example/source-tutorial/robot-learning-harness-demo/evidence/ARTIFACT_PACK_EXCERPT.tsv",
 )
 
 HARNESS_SHOWCASE_ASSET_PATHS = (

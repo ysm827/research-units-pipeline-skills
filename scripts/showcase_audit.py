@@ -65,6 +65,18 @@ FIXTURE_GROUPS = (
             "evidence/DELIVERY_EVIDENCE.md": ("latex/main.pdf", "latex/slides/main.pdf"),
             "evidence/CONTRACT_REPORT.md": ("Status: PASS",),
             "evidence/RUN_AUDIT_SUMMARY.md": ("Audit verdict: PASS",),
+            "evidence/ARTIFACT_PACK_EXCERPT.md": (
+                "# Artifact Pack Excerpt",
+                "artifact-pack.v1",
+                "target_artifact",
+                "unit_output",
+                "harness_report",
+            ),
+            "evidence/ARTIFACT_PACK_EXCERPT.tsv": (
+                "category\tpath\texists\trole",
+                "target_artifact\toutput/TUTORIAL_EXCERPT.md\ttrue\tfinal tutorial excerpt",
+                "harness_report\tevidence/RUN_AUDIT_SUMMARY.md\ttrue\trun audit evidence",
+            ),
         },
     },
 )

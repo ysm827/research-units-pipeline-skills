@@ -128,11 +128,16 @@ Then trace backward and outward:
 | PDF and slide delivery evidence | `example/source-tutorial/robot-learning-harness-demo/evidence/DELIVERY_EVIDENCE.md` |
 | Artifact contract evidence | `example/source-tutorial/robot-learning-harness-demo/evidence/CONTRACT_REPORT.md` |
 | Run audit summary | `example/source-tutorial/robot-learning-harness-demo/evidence/RUN_AUDIT_SUMMARY.md` |
+| Handoff manifest excerpt | `example/source-tutorial/robot-learning-harness-demo/evidence/ARTIFACT_PACK_EXCERPT.md` |
+| Machine-readable excerpt | `example/source-tutorial/robot-learning-harness-demo/evidence/ARTIFACT_PACK_EXCERPT.tsv` |
 | Workflow protocol | `pipelines/source-tutorial.pipeline.md` |
 
 This fixture demonstrates a richer product chain than the research-brief
 fixture: source set, tutorial spec, teaching modules, article prose, article
 PDF, Beamer slides, self-check, contract report, and run audit.
+Its artifact-pack excerpt uses the same relative-path pattern as the compact
+research-brief fixture, but covers richer delivery surfaces and separate
+human-readable versus model-readable evidence.
 
 ## Completed Local Workspace Exhibit
 
