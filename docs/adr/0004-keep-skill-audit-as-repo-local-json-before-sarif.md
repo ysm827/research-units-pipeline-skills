@@ -17,7 +17,8 @@ maps this to SARIF as a useful external pattern for stable static-analysis
 interchange.
 
 However, the repo does not currently have an external consumer that requires
-SARIF. CI uses `python scripts/audit_skills.py --fail-on WARN`, and future
+SARIF. The local blocking check is
+`python scripts/audit_skills.py --fail-on WARN`, and future
 repo-local tooling can consume `python scripts/audit_skills.py --format json`
 with `scripts.audit_skills.validate_skill_audit_payload`.
 
@@ -63,4 +64,3 @@ If SARIF becomes necessary, add a SARIF exporter as an adapter. Do not replace
 - `docs/PATTERN_REGISTER.md`
 - `tooling/harness_contracts.py`
 - `tests/test_harness_validation.py`
-- `.github/workflows/harness.yml`

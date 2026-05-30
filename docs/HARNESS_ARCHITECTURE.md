@@ -126,7 +126,6 @@ Authoritative files:
 - `tests/test_harness_smoke.py`
 - `tests/test_harness_validation.py`
 - `tests/test_pipeline_harness_doctor.py`
-- `.github/workflows/harness.yml`
 - `pyproject.toml`
 
 The evidence loop supplies deterministic observation and comparison:

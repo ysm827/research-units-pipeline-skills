@@ -157,8 +157,8 @@ This model is grounded in current repo facts:
 - Doctor and run audit already produce Markdown reports plus JSON sidecars.
 - Audit diff now compares two run audit payloads, but it is not a benchmark
   dashboard.
-- The project already has validation, tests, CI, ADRs, schema docs, a pattern
-  register, and readiness evidence.
+- The project already has validation, tests, local harness checks, ADRs, schema
+  docs, a pattern register, and readiness evidence.
 - The project has enough evidence surfaces to support bounded
   self-improvement, but not yet enough completed-run corpus to justify a full
   autonomous policy loop or benchmark dashboard.

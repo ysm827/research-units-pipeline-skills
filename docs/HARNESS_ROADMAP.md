@@ -82,8 +82,8 @@ Tracked artifacts:
 - `scripts/validate_repo.py` docs-entrypoint checks
 - `scripts/readiness_audit.py` evidence-surface checks
 - `scripts/showcase_audit.py` portable exhibit checks
-- `tooling/harness_contracts.py` shared docs/readiness/CI contract constants
-  including `HARNESS_CI_GATES`
+- `tooling/harness_contracts.py` shared docs/readiness/local-check contract
+  constants including `HARNESS_LOCAL_CHECKS`
 
 Acceptance:
 
@@ -100,8 +100,8 @@ Acceptance:
   protocol links, and the visual lineage asset.
 - Future tools can consume `harness-showcase-audit.v1` through
   `docs/SHOWCASE_AUDIT_SCHEMA.md` instead of scraping Markdown.
-- CI runs the same showcase audit so exhibit regressions are treated as
-  harness regressions, not only documentation drift.
+- The same showcase audit is listed as a local harness check so exhibit
+  regressions are treated as harness regressions, not only documentation drift.
 - Strict repo validation warns when the external pattern register loses its
   required sections, adopted/partial/deferred status vocabulary, reference
   codebase table, or adoption rules.
@@ -231,7 +231,7 @@ quality gates.
 
 Candidate changes:
 
-- Keep the current `audit_skills.py` WARN surface empty and CI-backed with
+- Keep the current `audit_skills.py` WARN surface empty and locally checked with
   `python scripts/audit_skills.py --fail-on WARN`.
 - Triage new `audit_skills.py` WARN findings as actionable skill hygiene
   regressions.
@@ -256,8 +256,8 @@ Candidate changes:
 
 Acceptance:
 
-- CI fails on WARN-level skill audit findings while INFO-level findings remain
-  review signals.
+- The local WARN-level skill audit check fails on actionable findings while
+  INFO-level findings remain review signals.
 - Skill audit summaries expose review categories, not only raw rule counts.
 - Skill audit users can inspect a single review category without reading the
   full report.

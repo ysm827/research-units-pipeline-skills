@@ -139,7 +139,7 @@ The same harness can serve different readers when the output shape is explicit:
 | Individual researcher | final brief, tutorial, review, or synthesis | natural-language deliverable plus traceable evidence |
 | Research group or lab | comparable run summaries and decision trails | run audit, audit diff, artifact packs |
 | B-side knowledge team | repeatable workflow with review checkpoints | workflow protocol, human checkpoint, structured evidence tables |
-| Open-source evaluator | clear architecture and verifiable examples | showcase, system map, schema docs, CI badges |
+| Open-source evaluator | clear architecture and verifiable examples | showcase, system map, schema docs, local checks |
 | Maintainer | drift signals and upgrade path | validation, skill audit, readiness audit, roadmap |
 
 The current showcase and schema docs support this direction. The next product

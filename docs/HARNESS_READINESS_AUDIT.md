@@ -23,16 +23,16 @@ The audit reports `harness-readiness-audit.v1` and checks:
 - ADR set and ADR index presence
 - pipeline taxonomy coverage for the current eight workflows
 - executable pipeline contracts and unit templates
-- harness CI gates listed in `HARNESS_CI_GATES`: WARN-level skill audit and
-  portable showcase audit
+- local harness checks listed in `HARNESS_LOCAL_CHECKS`: WARN-level skill
+  audit and portable showcase audit
 - core validation, audit, pipeline, graph, readiness, showcase, and test
   surfaces
 
 The contract lists used by this audit live in `tooling/harness_contracts.py`,
-which is shared with `scripts/validate_repo.py` so README/docs/CI evidence
-surfaces do not drift across two scripts. The same shared contract module also
-defines the pattern-register metadata and schema reference docs that strict
-repo validation protects.
+which is shared with `scripts/validate_repo.py` so README/docs/local-check
+evidence surfaces do not drift across two scripts. The same shared contract
+module also defines the pattern-register metadata and schema reference docs
+that strict repo validation protects.
 
 ## What It Does Not Check
 

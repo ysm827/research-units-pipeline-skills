@@ -15,7 +15,7 @@ from tooling.harness_contracts import (
     CURRENT_WORKFLOWS,
     EXECUTABLE_PIPELINE_CONTRACTS,
     EXECUTABLE_UNIT_TEMPLATES,
-    HARNESS_CI_GATES,
+    HARNESS_LOCAL_CHECKS,
     HARNESS_README_LINKS,
     HARNESS_SHOWCASE_AUDIT_GATE,
     HARNESS_SKILL_AUDIT_GATE,
@@ -35,7 +35,7 @@ WORKFLOWS = CURRENT_WORKFLOWS
 EXECUTABLE_PIPELINES = EXECUTABLE_PIPELINE_CONTRACTS
 SKILL_AUDIT_GATE = HARNESS_SKILL_AUDIT_GATE
 SHOWCASE_AUDIT_GATE = HARNESS_SHOWCASE_AUDIT_GATE
-CI_GATES = HARNESS_CI_GATES
+LOCAL_CHECKS = HARNESS_LOCAL_CHECKS
 VALIDATION_SURFACES = READINESS_VALIDATION_SURFACES
 
 
@@ -107,7 +107,7 @@ def build_readiness_audit(*, repo_root: Path, progress_path: Path) -> dict[str, 
             check_id="unit_templates",
             label="executable unit templates",
         ),
-        _check_ci_harness_gates(repo_root=repo_root),
+        _check_local_harness_checks(repo_root=repo_root),
         _check_required_paths(
             repo_root=repo_root,
             rel_paths=VALIDATION_SURFACES,
@@ -281,34 +281,34 @@ def _check_workflow_taxonomy(*, repo_root: Path) -> ReadinessCheck:
     )
 
 
-def _check_ci_harness_gates(*, repo_root: Path) -> ReadinessCheck:
-    workflow_path = repo_root / ".github" / "workflows" / "harness.yml"
-    if not workflow_path.exists():
+def _check_local_harness_checks(*, repo_root: Path) -> ReadinessCheck:
+    readiness_path = repo_root / "docs" / "HARNESS_READINESS.md"
+    if not readiness_path.exists():
         return ReadinessCheck(
-            "ci_harness_gates",
+            "local_harness_checks",
             "WARN",
-            "Missing `.github/workflows/harness.yml`.",
-            "Restore harness CI before closure.",
+            "Missing `docs/HARNESS_READINESS.md`.",
+            "Restore the readiness document before closure.",
         )
-    text = workflow_path.read_text(encoding="utf-8", errors="ignore")
-    missing = [gate for gate in CI_GATES if gate not in text]
+    text = readiness_path.read_text(encoding="utf-8", errors="ignore")
+    missing = [check for check in LOCAL_CHECKS if check not in text]
     if missing:
         return ReadinessCheck(
-            "ci_harness_gates",
+            "local_harness_checks",
             "WARN",
-            "CI does not run harness gate(s): " + _format_gate_list(missing) + ".",
-            "Keep skill hygiene and portable showcase evidence CI-protected.",
+            "Readiness docs do not list local harness check(s): " + _format_check_list(missing) + ".",
+            "Keep skill hygiene and portable showcase evidence visible as local checks.",
         )
     return ReadinessCheck(
-        "ci_harness_gates",
+        "local_harness_checks",
         "PASS",
-        "CI runs " + _format_gate_list(CI_GATES) + ".",
+        "Readiness docs list " + _format_check_list(LOCAL_CHECKS) + ".",
         "Treat new WARN findings and showcase regressions as actionable harness issues.",
     )
 
 
-def _format_gate_list(gates: Iterable[str]) -> str:
-    return " and ".join(f"`{gate}`" for gate in gates)
+def _format_check_list(checks: Iterable[str]) -> str:
+    return " and ".join(f"`{check}`" for check in checks)
 
 
 def render_json(payload: dict[str, object]) -> str:

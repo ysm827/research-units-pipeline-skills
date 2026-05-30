@@ -105,7 +105,7 @@ The deterministic support layer around skills and pipelines.
 
 The harness owns repeatability: workspace initialization, unit execution,
 status transitions, recovery, manifests, doctor reports, validation, audits,
-and CI smoke checks.
+and local smoke checks.
 
 ### Implementation surface
 
@@ -121,16 +121,17 @@ audience first needs the abstract layer.
 The repo-local code and scripts that implement harness behavior:
 `tooling/harness.py`, `tooling/executor.py`, `scripts/pipeline.py`,
 `scripts/validate_repo.py`, `scripts/audit_skills.py`,
-`scripts/generate_skill_graph.py`, tests, `pyproject.toml`, and CI.
+`scripts/generate_skill_graph.py`, tests, `pyproject.toml`, and local harness
+checks.
 
-### Harness CI gate
+### Local harness check
 
-A protected repository check listed in `HARNESS_CI_GATES` inside
-`tooling/harness_contracts.py` and run by `.github/workflows/harness.yml`.
+A repo-local command listed in `HARNESS_LOCAL_CHECKS` inside
+`tooling/harness_contracts.py` and referenced by the readiness evidence.
 
-Use harness CI gate for checks that should fail the project-level harness
-workflow when a contract regresses. Current gates include WARN-level skill
-audit and portable showcase audit. Do not add a gate until it is fast,
+Use local harness check for commands that maintainers should run when a
+contract regresses or before a release. Current checks include WARN-level skill
+audit and portable showcase audit. Do not add a check until it is fast,
 deterministic, and backed by local validation or tests.
 
 ### Workspace
@@ -282,7 +283,8 @@ matching text mechanically.
 For skill audits, diagnostic examples and anti-pattern labels should not crowd
 out warnings about strings that can leak into generated artifacts.
 
-WARN-level skill audit findings are intended to be CI-blocking. INFO-level
+WARN-level skill audit findings are intended to be blocking for local release
+checks. INFO-level
 findings are review signals until they are promoted into a sharper rule.
 
 ### Review category
@@ -400,8 +402,8 @@ goal complete.
 ### Harness contract
 
 The shared repo-level list of harness entrypoints, README links, schema
-references, CI quality gates, current workflows, and readiness-audit evidence
-paths.
+references, local harness checks, current workflows, and readiness-audit
+evidence paths.
 
 The current implementation lives in `tooling/harness_contracts.py` and is used
 by both `scripts/validate_repo.py` and `scripts/readiness_audit.py`.
@@ -511,7 +513,7 @@ contain reader-facing deliverables, protocol links, evidence reports, and the
 visual lineage asset. Do not use it as a substitute for live retrieval,
 compilation, run audit, or semantic quality review.
 
-The CI workflow runs the same command as a protected exhibit gate.
+The same command is listed as a local harness check for exhibit regressions.
 
 ## Terms To Avoid Or Qualify
 
@@ -522,7 +524,8 @@ The CI workflow runs the same command as a protected exhibit gate.
 - Avoid calling `graduate-paper` executable until the contract exists.
 - Avoid saying a run is "complete" unless artifact contracts, unit statuses,
   and relevant quality gates support that claim.
-- Avoid saying "CI proves quality"; CI proves only the checks it runs.
+- Avoid saying "checks prove quality"; local checks prove only the contracts
+  they inspect.
 
 ## Current Naming Conventions
 

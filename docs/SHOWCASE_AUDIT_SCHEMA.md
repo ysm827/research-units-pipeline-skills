@@ -7,7 +7,7 @@ written by:
 python scripts/showcase_audit.py --format json
 ```
 
-The CI gate uses the same producer in strict mode:
+The local showcase check uses the same producer in strict mode:
 
 ```bash
 python scripts/showcase_audit.py --strict
@@ -20,7 +20,7 @@ python scripts/showcase_audit.py --strict
   `scripts.showcase_audit.render_json`
 - Compatibility check:
   `scripts.showcase_audit.validate_showcase_audit_payload`
-- CI gate: `python scripts/showcase_audit.py --strict`
+- Local blocking check: `python scripts/showcase_audit.py --strict`
 - Architecture decision:
   `docs/adr/0006-keep-showcase-audit-as-repo-local-json-contract.md`
 

@@ -88,7 +88,7 @@ flowchart TB
         quality["tooling/quality_gate.py\nartifact checks"]
         doctor["doctor-report.v1\nworkspace diagnosis"]
         run_audit["run-audit.v1 + run-audit-diff.v1\nrun evidence and comparison"]
-        tests["tests/ + .github/workflows/harness.yml\nsmoke and regression checks"]
+        tests["tests/ + local harness checks\nsmoke and regression checks"]
     end
 
     subgraph learning["Learning Layer"]
@@ -250,7 +250,7 @@ What exists now:
 - evidence loop: doctor reports, run audit, audit diff, quality gates, and
   JSON sidecars
 - learning layer: ADRs, glossary, pattern register, roadmap, readiness ledger
-- validation: strict repo validation, skill audit, tests, CI
+- validation: strict repo validation, skill audit, tests, local harness checks
 
 What a future autonomous research agent still needs:
 

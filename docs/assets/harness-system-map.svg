@@ -89,7 +89,7 @@
   <rect class="chip" x="1003" y="543" width="199" height="48" rx="8"/>
   <text class="mono" x="1102" y="573" text-anchor="middle">JSON sidecars</text>
   <text class="small" x="1003" y="650">Typed issues, manifests,</text>
-  <text class="small" x="1003" y="674">comparison, CI checks</text>
+  <text class="small" x="1003" y="674">comparison, local checks</text>
 
   <rect class="learning" x="360" y="840" width="870" height="150" rx="18"/>
   <text class="layer-title" x="390" y="880">5. Learning Layer</text>

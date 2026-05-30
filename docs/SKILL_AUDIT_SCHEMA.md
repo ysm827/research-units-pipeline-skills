@@ -18,7 +18,7 @@ python scripts/audit_skills.py --format json --review-category template_placehol
 - Producer: `scripts.audit_skills.build_report_payload`
 - Text/JSON renderer: `scripts.audit_skills.render_report`
 - Compatibility check: `scripts.audit_skills.validate_skill_audit_payload`
-- CI gate: `python scripts/audit_skills.py --fail-on WARN`
+- Local blocking check: `python scripts/audit_skills.py --fail-on WARN`
 - Architecture decision:
   `docs/adr/0004-keep-skill-audit-as-repo-local-json-before-sarif.md`
 
@@ -83,8 +83,9 @@ Current filter metadata can include:
 | `limit` | integer | Maximum displayed finding records requested through `--limit`. |
 | `summary_only` | boolean | Whether finding details were intentionally omitted. |
 
-Filtering is applied before `--fail-on`. CI should keep using the unfiltered
-WARN-level gate so blocking skill regressions remain visible.
+Filtering is applied before `--fail-on`. The local blocking check should keep
+using the unfiltered WARN-level command so blocking skill regressions remain
+visible.
 
 ## Compatibility Rule
 

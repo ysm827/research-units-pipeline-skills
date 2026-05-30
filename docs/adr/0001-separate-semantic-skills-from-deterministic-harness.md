@@ -16,7 +16,7 @@ The repository contains two kinds of work:
 Before the harness layer was named explicitly, these responsibilities were
 visible but not fully narrated as an architecture. The repo now includes
 `tooling/harness.py`, `pipeline.py doctor`, unit output manifests, stale
-`DOING` recovery, `pyproject.toml`, harness tests, and CI checks. That makes the
+`DOING` recovery, `pyproject.toml`, harness tests, and local checks. That makes the
 split concrete enough to record as an architectural decision.
 
 ## Decision
@@ -43,7 +43,7 @@ The harness should own:
 - workspace diagnosis
 - contract validation
 - generated graph freshness checks
-- CI smoke checks
+- local smoke and validation checks
 
 ## Consequences
 
@@ -71,4 +71,3 @@ harness.
 - `tooling/executor.py`
 - `scripts/pipeline.py`
 - `scripts/validate_repo.py`
-- `.github/workflows/harness.yml`

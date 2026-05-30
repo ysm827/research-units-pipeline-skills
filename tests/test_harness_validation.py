@@ -15,10 +15,8 @@ def _write_minimal_harness_docs(repo_root: Path) -> None:
     docs_dir = repo_root / "docs"
     adr_dir = docs_dir / "adr"
     scripts_dir = repo_root / "scripts"
-    workflow_dir = repo_root / ".github" / "workflows"
     adr_dir.mkdir(parents=True)
     scripts_dir.mkdir(parents=True)
-    workflow_dir.mkdir(parents=True)
     (docs_dir / "HARNESS_ARCHITECTURE.md").write_text(
         "See docs/AUTO_RESEARCH_HARNESS.md, docs/HARNESS_OPERATING_MODEL.md, "
         "docs/PIPELINE_TAXONOMY.md, docs/PROJECT_LANGUAGE.md, "
@@ -43,7 +41,10 @@ def _write_minimal_harness_docs(repo_root: Path) -> None:
     (docs_dir / "PIPELINE_TAXONOMY.md").write_text("# Pipeline Taxonomy\n", encoding="utf-8")
     (docs_dir / "PROJECT_LANGUAGE.md").write_text("# Project Language\n", encoding="utf-8")
     (docs_dir / "HARNESS_ROADMAP.md").write_text("# Harness Roadmap\n", encoding="utf-8")
-    (docs_dir / "HARNESS_READINESS.md").write_text("# Harness Readiness\n", encoding="utf-8")
+    (docs_dir / "HARNESS_READINESS.md").write_text(
+        "# Harness Readiness\n\n" + "\n".join(validate_repo.HARNESS_LOCAL_CHECKS) + "\n",
+        encoding="utf-8",
+    )
     (docs_dir / "HARNESS_READINESS_AUDIT.md").write_text(
         "harness-readiness-audit.v1\npython scripts/readiness_audit.py\ndocs/HARNESS_READINESS.md\n",
         encoding="utf-8",
@@ -106,16 +107,6 @@ def _write_minimal_harness_docs(repo_root: Path) -> None:
                 "# ADR Index",
                 "",
                 *[f"- [{adr_file[:4]}]({adr_file})" for adr_file in adr_files],
-                "",
-            ]
-        ),
-        encoding="utf-8",
-    )
-    (workflow_dir / "harness.yml").write_text(
-        "\n".join(
-            [
-                "steps:",
-                *[f"  - run: {gate}" for gate in validate_repo.HARNESS_CI_GATES],
                 "",
             ]
         ),
@@ -307,8 +298,8 @@ def test_current_harness_docs_are_valid_entrypoints() -> None:
 def test_readiness_audit_and_repo_validation_share_harness_contracts() -> None:
     assert validate_repo.HARNESS_README_LINKS is harness_contracts.HARNESS_README_LINKS
     assert readiness_audit.README_LINKS is harness_contracts.HARNESS_README_LINKS
-    assert validate_repo.HARNESS_CI_GATES is harness_contracts.HARNESS_CI_GATES
-    assert readiness_audit.CI_GATES is harness_contracts.HARNESS_CI_GATES
+    assert validate_repo.HARNESS_LOCAL_CHECKS is harness_contracts.HARNESS_LOCAL_CHECKS
+    assert readiness_audit.LOCAL_CHECKS is harness_contracts.HARNESS_LOCAL_CHECKS
     assert validate_repo.HARNESS_SKILL_AUDIT_GATE == readiness_audit.SKILL_AUDIT_GATE
     assert validate_repo.HARNESS_SHOWCASE_AUDIT_GATE == readiness_audit.SHOWCASE_AUDIT_GATE
     assert "tooling/harness_contracts.py" in readiness_audit.VALIDATION_SURFACES
@@ -339,13 +330,12 @@ def test_harness_docs_validation_reports_missing_readme_links(tmp_path: Path) ->
     ]
 
 
-def test_harness_docs_validation_reports_nonblocking_skill_audit_gate(tmp_path: Path) -> None:
+def test_harness_docs_validation_reports_missing_local_harness_check(tmp_path: Path) -> None:
     _write_minimal_harness_docs(tmp_path)
     (tmp_path / "README.md").write_text(_readme_with_harness_links(), encoding="utf-8")
     (tmp_path / "README.zh-CN.md").write_text(_readme_with_harness_links(), encoding="utf-8")
-    (tmp_path / ".github" / "workflows" / "harness.yml").write_text(
-        f"steps:\n  - run: {validate_repo.HARNESS_SHOWCASE_AUDIT_GATE}\n"
-        "  - run: python scripts/audit_skills.py --fail-on ERROR\n",
+    (tmp_path / "docs" / "HARNESS_READINESS.md").write_text(
+        f"# Harness Readiness\n\n{validate_repo.HARNESS_SHOWCASE_AUDIT_GATE}\n",
         encoding="utf-8",
     )
 
@@ -354,28 +344,8 @@ def test_harness_docs_validation_reports_nonblocking_skill_audit_gate(tmp_path: 
     assert [(item.level, item.message) for item in findings] == [
         (
             "WARN",
-            "`.github/workflows/harness.yml` should run harness CI gates: "
+            "`docs/HARNESS_READINESS.md` should list local harness checks: "
             "`python scripts/audit_skills.py --fail-on WARN`.",
-        )
-    ]
-
-
-def test_harness_docs_validation_reports_missing_showcase_audit_gate(tmp_path: Path) -> None:
-    _write_minimal_harness_docs(tmp_path)
-    (tmp_path / "README.md").write_text(_readme_with_harness_links(), encoding="utf-8")
-    (tmp_path / "README.zh-CN.md").write_text(_readme_with_harness_links(), encoding="utf-8")
-    (tmp_path / ".github" / "workflows" / "harness.yml").write_text(
-        f"steps:\n  - run: {validate_repo.HARNESS_SKILL_AUDIT_GATE}\n",
-        encoding="utf-8",
-    )
-
-    findings = validate_repo._validate_harness_docs(repo_root=tmp_path, docs_dir=tmp_path / "docs")
-
-    assert [(item.level, item.message) for item in findings] == [
-        (
-            "WARN",
-            "`.github/workflows/harness.yml` should run harness CI gates: "
-            "`python scripts/showcase_audit.py --strict`.",
         )
     ]
 

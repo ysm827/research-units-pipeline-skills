@@ -57,7 +57,7 @@ SCHEMA_REFERENCE_DOCS = {
         "json_output": "python scripts/audit_skills.py --format json",
         "producer": "scripts.audit_skills.build_report_payload",
         "validator": "scripts.audit_skills.validate_skill_audit_payload",
-        "ci_gate": "python scripts/audit_skills.py --fail-on WARN",
+        "local_check": "python scripts/audit_skills.py --fail-on WARN",
         "adr": "docs/adr/0004-keep-skill-audit-as-repo-local-json-before-sarif.md",
     },
     "docs/DOCTOR_REPORT_SCHEMA.md": {
@@ -86,7 +86,7 @@ SCHEMA_REFERENCE_DOCS = {
         "json_output": "python scripts/showcase_audit.py --format json",
         "producer": "scripts.showcase_audit.build_showcase_audit",
         "validator": "scripts.showcase_audit.validate_showcase_audit_payload",
-        "ci_gate": "python scripts/showcase_audit.py --strict",
+        "local_check": "python scripts/showcase_audit.py --strict",
         "adr": "docs/adr/0006-keep-showcase-audit-as-repo-local-json-contract.md",
     },
 }
@@ -155,12 +155,11 @@ PATTERN_REGISTER_REQUIRED_ADOPTION_RULES = (
     "If adoption changes a repo-level contract, record the decision as an ADR",
 )
 
-HARNESS_CI_WORKFLOW = ".github/workflows/harness.yml"
 HARNESS_SKILL_AUDIT_GATE = "python scripts/audit_skills.py --fail-on WARN"
 HARNESS_READINESS_AUDIT_SCRIPT = "scripts/readiness_audit.py"
 HARNESS_SHOWCASE_AUDIT_SCRIPT = "scripts/showcase_audit.py"
 HARNESS_SHOWCASE_AUDIT_GATE = "python scripts/showcase_audit.py --strict"
-HARNESS_CI_GATES = (
+HARNESS_LOCAL_CHECKS = (
     HARNESS_SKILL_AUDIT_GATE,
     HARNESS_SHOWCASE_AUDIT_GATE,
 )
@@ -235,7 +234,6 @@ READINESS_VALIDATION_SURFACES = (
     "tests/test_harness_smoke.py",
     "tests/test_harness_validation.py",
     "tests/test_pipeline_harness_doctor.py",
-    ".github/workflows/harness.yml",
 )
 
 HARNESS_SHOWCASE_FIXTURE_PATHS = (

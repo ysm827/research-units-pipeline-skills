@@ -24,8 +24,7 @@ from tooling.harness_contracts import (
     ADR_ALLOWED_STATUSES,
     ADR_REQUIRED_METADATA,
     ADR_REQUIRED_SECTIONS,
-    HARNESS_CI_GATES,
-    HARNESS_CI_WORKFLOW,
+    HARNESS_LOCAL_CHECKS,
     HARNESS_DOC_ENTRYPOINTS,
     HARNESS_READINESS_AUDIT_SCRIPT,
     HARNESS_README_LINKS,
@@ -474,7 +473,7 @@ def _validate_harness_docs(*, repo_root: Path, docs_dir: Path) -> list[Finding]:
     findings.extend(_validate_auto_research_harness_doc(repo_root=repo_root))
     findings.extend(_validate_harness_showcase(repo_root=repo_root))
     findings.extend(_validate_pattern_register(repo_root=repo_root))
-    findings.extend(_validate_harness_ci_quality_gate(repo_root=repo_root))
+    findings.extend(_validate_local_harness_checks(repo_root=repo_root))
     findings.extend(_validate_harness_readiness_audit(repo_root=repo_root))
 
     return findings
@@ -594,19 +593,19 @@ def _validate_harness_readiness_audit(*, repo_root: Path) -> list[Finding]:
     return []
 
 
-def _validate_harness_ci_quality_gate(*, repo_root: Path) -> list[Finding]:
-    workflow_path = repo_root / HARNESS_CI_WORKFLOW
-    if not workflow_path.exists():
-        return [Finding("WARN", f"Missing `{HARNESS_CI_WORKFLOW}` (harness CI quality gate).")]
+def _validate_local_harness_checks(*, repo_root: Path) -> list[Finding]:
+    readiness_path = repo_root / "docs" / "HARNESS_READINESS.md"
+    if not readiness_path.exists():
+        return []
 
-    text = workflow_path.read_text(encoding="utf-8", errors="ignore")
-    missing = [gate for gate in HARNESS_CI_GATES if gate not in text]
+    text = readiness_path.read_text(encoding="utf-8", errors="ignore")
+    missing = [check for check in HARNESS_LOCAL_CHECKS if check not in text]
     if missing:
         return [
             Finding(
                 "WARN",
-                f"`{HARNESS_CI_WORKFLOW}` should run harness CI gates: "
-                + ", ".join(f"`{gate}`" for gate in missing)
+                "`docs/HARNESS_READINESS.md` should list local harness checks: "
+                + ", ".join(f"`{check}`" for check in missing)
                 + ".",
             )
         ]

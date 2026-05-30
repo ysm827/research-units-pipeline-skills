@@ -51,7 +51,7 @@
 这个仓库分两层：
 
 - **Skills** 是语义执行单元。它们描述研究判断：该读什么、产出什么工件、验收标准是什么、哪些 guardrail 不能破。
-- **Harness** 是围绕 skills 的确定性支撑层。它负责初始化 workspace、运行 unit scripts、验证 pipeline 合同、检查生成的依赖图、诊断 workspace 状态、记录每个 unit 的输出 manifest、恢复中断后遗留的 `DOING` unit，并在 CI 里跑 smoke tests。
+- **Harness** 是围绕 skills 的确定性支撑层。它负责初始化 workspace、运行 unit scripts、验证 pipeline 合同、检查生成的依赖图、诊断 workspace 状态、记录每个 unit 的输出 manifest，并恢复中断后遗留的 `DOING` unit。
 
 改项目时保持这个分工：领域判断和写作政策放在 skills；可重复的校验、恢复和编排放在 harness。
 
@@ -164,7 +164,7 @@ python scripts/pipeline.py audit --workspace workspaces/<name> --write
 python scripts/pipeline.py audit-diff --before workspaces/<name>/output/RUN_AUDIT.before.json --after workspaces/<name>/output/RUN_AUDIT.json --write
 ```
 
-`validate_repo.py --strict --no-check-quality` 是可执行 pipelines 的阻塞合同检查。`audit_skills.py --fail-on WARN` 是 CI 使用的 skill hygiene gate：WARN 级 finding 应当对应可执行修复，INFO 级 finding 保持为 review signal，并按 `review_category` 和 `next_action` 分组，例如 syntax placeholder、reference example、placeholder policy、asset palette、anti-pattern guidance。使用 `--review-category` 和 `--limit` 可以只查看一个 review queue，避免打印完整报告；只需要分组计数时用 `--summary-only`。`readiness_audit.py` 检查最终 harness closure audit 前需要的证据面；它不跑测试，也不会标记 goal 完成。`showcase_audit.py` 检查 `example/` 下的可移植示例，让先看交付物的展示路径同时具备真实输出、protocol link、evidence report 和可视化 lineage asset；CI 也会把它作为受保护的 exhibit gate 来跑。`pipeline.py doctor` 是 workspace 级 harness 检查：它会展示当前 checkpoint、unit 状态计数、下一个可运行 unit、缺失依赖、DONE unit 缺失输出、typed remediation category 和 next action。加上 `--write` 后，同一份诊断会沉淀到 `output/DOCTOR_REPORT.md` 和 `output/DOCTOR_REPORT.json`。`pipeline.py audit --write` 会生成 `output/RUN_AUDIT.md` 和 `output/RUN_AUDIT.json`，作为 compact run ledger，覆盖 workspace 文件、unit 状态、target artifact coverage、manifests、近期 harness reports 和 audit verdict。脚本型 unit 还会写入 `output/unit_logs/<unit>.<skill>.manifest.json`，记录输出哈希，方便追踪。
+`validate_repo.py --strict --no-check-quality` 是可执行 pipelines 的阻塞合同检查。`audit_skills.py --fail-on WARN` 是本地 skill hygiene check：WARN 级 finding 应当对应可执行修复，INFO 级 finding 保持为 review signal，并按 `review_category` 和 `next_action` 分组，例如 syntax placeholder、reference example、placeholder policy、asset palette、anti-pattern guidance。使用 `--review-category` 和 `--limit` 可以只查看一个 review queue，避免打印完整报告；只需要分组计数时用 `--summary-only`。`readiness_audit.py` 检查最终 harness closure audit 前需要的证据面；它不跑测试，也不会标记 goal 完成。`showcase_audit.py` 检查 `example/` 下的可移植示例，让先看交付物的展示路径同时具备真实输出、protocol link、evidence report 和可视化 lineage asset。`pipeline.py doctor` 是 workspace 级 harness 检查：它会展示当前 checkpoint、unit 状态计数、下一个可运行 unit、缺失依赖、DONE unit 缺失输出、typed remediation category 和 next action。加上 `--write` 后，同一份诊断会沉淀到 `output/DOCTOR_REPORT.md` 和 `output/DOCTOR_REPORT.json`。`pipeline.py audit --write` 会生成 `output/RUN_AUDIT.md` 和 `output/RUN_AUDIT.json`，作为 compact run ledger，覆盖 workspace 文件、unit 状态、target artifact coverage、manifests、近期 harness reports 和 audit verdict。脚本型 unit 还会写入 `output/unit_logs/<unit>.<skill>.manifest.json`，记录输出哈希，方便追踪。
 
 `pipeline.py audit-diff` 会比较两个有效的 `RUN_AUDIT.json`，加上 `--write` 后会在 after payload 旁写入 `RUN_AUDIT_DIFF.md` 和 `RUN_AUDIT_DIFF.json`。当一次 repair 或后续 unit 应当证明 target artifacts、unit status、manifests 或 harness issues 真的改善，而不只是发生变化时，用这个命令。
 
