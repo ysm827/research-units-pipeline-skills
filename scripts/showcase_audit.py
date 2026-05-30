@@ -36,6 +36,18 @@ FIXTURE_GROUPS = (
             "output/SNAPSHOT.md": ("# Snapshot: RAG Evaluation", "Harness Implication"),
             "output/DELIVERABLE_SELFLOOP_TODO.md": ("Status: PASS",),
             "output/CONTRACT_REPORT.md": ("Status: PASS",),
+            "output/ARTIFACT_PACK_EXCERPT.md": (
+                "# Artifact Pack Excerpt",
+                "artifact-pack.v1",
+                "target_artifact",
+                "run_ledger",
+                "harness_report",
+            ),
+            "output/ARTIFACT_PACK_EXCERPT.tsv": (
+                "category\tpath\texists\trole",
+                "target_artifact\toutput/SNAPSHOT.md\ttrue\tfinal deliverable",
+                "harness_report\toutput/CONTRACT_REPORT.md\ttrue\tcontract evidence",
+            ),
         },
     },
     {

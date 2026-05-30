@@ -87,10 +87,14 @@ Then trace backward:
 | Core set | `example/research-brief/rag-evaluation-harness-demo/papers/core_set.csv` |
 | Self-check | `example/research-brief/rag-evaluation-harness-demo/output/DELIVERABLE_SELFLOOP_TODO.md` |
 | Contract check | `example/research-brief/rag-evaluation-harness-demo/output/CONTRACT_REPORT.md` |
+| Handoff manifest excerpt | `example/research-brief/rag-evaluation-harness-demo/output/ARTIFACT_PACK_EXCERPT.md` |
+| Machine-readable excerpt | `example/research-brief/rag-evaluation-harness-demo/output/ARTIFACT_PACK_EXCERPT.tsv` |
 | Workflow protocol | `pipelines/research-brief.pipeline.md` |
 
 This fixture is intentionally small. It demonstrates artifact lineage, not a
-full live retrieval run.
+full live retrieval run. The artifact-pack excerpt uses repo-relative paths so
+it can be tracked under `example/` without embedding a developer's local
+workspace path.
 
 ## Tracked Source-Tutorial Fixture
 

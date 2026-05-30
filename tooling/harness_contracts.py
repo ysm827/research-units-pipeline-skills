@@ -331,6 +331,8 @@ HARNESS_SHOWCASE_FIXTURE_PATHS = (
     "example/research-brief/rag-evaluation-harness-demo/papers/core_set.csv",
     "example/research-brief/rag-evaluation-harness-demo/output/DELIVERABLE_SELFLOOP_TODO.md",
     "example/research-brief/rag-evaluation-harness-demo/output/CONTRACT_REPORT.md",
+    "example/research-brief/rag-evaluation-harness-demo/output/ARTIFACT_PACK_EXCERPT.md",
+    "example/research-brief/rag-evaluation-harness-demo/output/ARTIFACT_PACK_EXCERPT.tsv",
     "example/source-tutorial/robot-learning-harness-demo/README.md",
     "example/source-tutorial/robot-learning-harness-demo/output/TUTORIAL_EXCERPT.md",
     "example/source-tutorial/robot-learning-harness-demo/output/TUTORIAL_SPEC_EXCERPT.md",

@@ -24,6 +24,7 @@ That file is the reader-facing target of the `research-brief` workflow.
 | Which intermediate stages explain the final brief? | `outline/taxonomy.yml`, `outline/outline.yml`, `papers/core_set.csv` |
 | What did the deliverable self-check conclude? | `output/DELIVERABLE_SELFLOOP_TODO.md` |
 | Did the artifact contract pass for this fixture? | `output/CONTRACT_REPORT.md` |
+| What would a handoff manifest index first? | `output/ARTIFACT_PACK_EXCERPT.md`, `output/ARTIFACT_PACK_EXCERPT.tsv` |
 
 ## Why This Example Exists
 
@@ -32,7 +33,7 @@ to know the product shape before learning the machinery. This fixture therefore
 shows a small but coherent path:
 
 ```text
-final brief -> outline -> taxonomy -> core set -> self-check -> contract check
+final brief -> outline -> taxonomy -> core set -> self-check -> contract check -> artifact-pack excerpt
 ```
 
 The live harness commands remain documented in `docs/HARNESS_RUN_WALKTHROUGH.md`.

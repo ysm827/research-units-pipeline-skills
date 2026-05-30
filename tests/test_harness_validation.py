@@ -210,6 +210,16 @@ def _write_minimal_showcase_audit_repo(repo_root: Path) -> None:
         "Status: PASS\n",
         encoding="utf-8",
     )
+    (research_root / "output" / "ARTIFACT_PACK_EXCERPT.md").write_text(
+        "# Artifact Pack Excerpt\n\nartifact-pack.v1\n\ntarget_artifact\nrun_ledger\nharness_report\n",
+        encoding="utf-8",
+    )
+    (research_root / "output" / "ARTIFACT_PACK_EXCERPT.tsv").write_text(
+        "category\tpath\texists\trole\n"
+        "target_artifact\toutput/SNAPSHOT.md\ttrue\tfinal deliverable\n"
+        "harness_report\toutput/CONTRACT_REPORT.md\ttrue\tcontract evidence\n",
+        encoding="utf-8",
+    )
 
     tutorial_root = repo_root / showcase_audit.SOURCE_TUTORIAL_ROOT
     (tutorial_root / "output" / "TUTORIAL_EXCERPT.md").write_text(
