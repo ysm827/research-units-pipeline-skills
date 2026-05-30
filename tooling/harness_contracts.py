@@ -223,6 +223,22 @@ ARTIFACT_INTERFACE_REQUIRED_MAPPINGS = (
     "Learning layer",
 )
 
+HARNESS_RUN_WALKTHROUGH_REQUIRED_TERMS = (
+    "python scripts/pipeline.py kickoff",
+    "python scripts/pipeline.py doctor --workspace",
+    "python scripts/pipeline.py audit --workspace",
+    "python scripts/pipeline.py improve --workspace",
+    "python scripts/pipeline.py pack --workspace",
+    "output/DOCTOR_REPORT.json",
+    "output/RUN_AUDIT.json",
+    "output/IMPROVEMENT_REPORT.json",
+    "output/ARTIFACT_PACK.json",
+    "doctor-report.v1",
+    "run-audit.v1",
+    "improvement-report.v1",
+    "artifact-pack.v1",
+)
+
 HARNESS_SKILL_AUDIT_GATE = "python scripts/audit_skills.py --fail-on WARN"
 HARNESS_READINESS_AUDIT_SCRIPT = "scripts/readiness_audit.py"
 HARNESS_SHOWCASE_AUDIT_SCRIPT = "scripts/showcase_audit.py"

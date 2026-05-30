@@ -31,6 +31,7 @@ from tooling.harness_contracts import (
     HARNESS_LOCAL_CHECKS,
     HARNESS_DOC_ENTRYPOINTS,
     HARNESS_READINESS_AUDIT_SCRIPT,
+    HARNESS_RUN_WALKTHROUGH_REQUIRED_TERMS,
     HARNESS_README_LINKS,
     HARNESS_SHOWCASE_AUDIT_GATE,
     HARNESS_SHOWCASE_AUDIT_SCRIPT,
@@ -483,6 +484,7 @@ def _validate_harness_docs(*, repo_root: Path, docs_dir: Path) -> list[Finding]:
     findings.extend(_validate_pattern_register(repo_root=repo_root))
     findings.extend(_validate_local_harness_checks(repo_root=repo_root))
     findings.extend(_validate_harness_readiness_audit(repo_root=repo_root))
+    findings.extend(_validate_harness_run_walkthrough(repo_root=repo_root))
 
     return findings
 
@@ -631,6 +633,27 @@ def _validate_harness_readiness_audit(*, repo_root: Path) -> list[Finding]:
             )
         ]
     return []
+
+
+def _validate_harness_run_walkthrough(*, repo_root: Path) -> list[Finding]:
+    rel_path = "docs/HARNESS_RUN_WALKTHROUGH.md"
+    doc_path = repo_root / rel_path
+    if not doc_path.exists():
+        return []
+
+    text = doc_path.read_text(encoding="utf-8", errors="ignore")
+    missing = [term for term in HARNESS_RUN_WALKTHROUGH_REQUIRED_TERMS if term not in text]
+    if not missing:
+        return []
+
+    return [
+        Finding(
+            "WARN",
+            f"`{rel_path}` is missing walkthrough command/artifact terms: "
+            + ", ".join(f"`{term}`" for term in missing)
+            + ".",
+        )
+    ]
 
 
 def _validate_local_harness_checks(*, repo_root: Path) -> list[Finding]:

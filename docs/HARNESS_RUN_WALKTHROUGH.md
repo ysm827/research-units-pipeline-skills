@@ -2,8 +2,9 @@
 
 This walkthrough ties `docs/HARNESS_SYSTEM_MAP.md` to one concrete repo-local
 run. It is intentionally narrow: it demonstrates how a user goal becomes a
-pipeline lock, unit ledger, doctor report, and run audit. It does not claim that
-the semantic research work is complete.
+pipeline lock, unit ledger, doctor report, run audit, repair map, and
+artifact-pack manifest. It does not claim that the semantic research work is
+complete.
 
 The observed run was executed in this checkout with `uv run python ...` because
 the local shell does not expose `python` directly. The examples below use
@@ -143,6 +144,70 @@ output/CONTRACT_REPORT.md
 That failure mode is useful. It proves that the harness can distinguish
 "workspace initialized" from "workflow completed".
 
+## 4. Map Evidence To Repair Surfaces
+
+Command:
+
+```bash
+python scripts/pipeline.py improve --workspace workspaces/harness-demo-research-brief --write
+```
+
+Like the audit, this command may return a non-zero status when the run still
+needs attention. That is expected for an initialized-but-incomplete workspace.
+
+Observed result:
+
+```text
+improvement-report.v1
+source reports: doctor-report.v1, run-audit.v1
+verdict: ATTENTION
+repair surface: repair_run_artifacts
+validation: python scripts/pipeline.py audit --workspace ... --write
+```
+
+The command writes:
+
+```text
+output/IMPROVEMENT_REPORT.md
+output/IMPROVEMENT_REPORT.json
+```
+
+The improvement report is not an autonomous repair planner. It is a local map
+from observed harness evidence to the upstream interface that should be fixed
+before the run can be treated as complete.
+
+## 5. Build The Handoff Manifest
+
+Command:
+
+```bash
+python scripts/pipeline.py pack --workspace workspaces/harness-demo-research-brief --write
+```
+
+For an incomplete workspace, the pack can also return `ATTENTION`. The point is
+not to hide missing work, but to give a reviewer one manifest that starts from
+deliverables and traces backward through the run evidence.
+
+Observed result:
+
+```text
+artifact-pack.v1
+source reports: doctor-report.v1, run-audit.v1, improvement-report.v1
+categories: target_artifact, unit_output, run_ledger, harness_report, unit_manifest
+verdict: ATTENTION
+```
+
+The command writes:
+
+```text
+output/ARTIFACT_PACK.md
+output/ARTIFACT_PACK.json
+```
+
+This manifest is the file-first handoff surface. It indexes what exists, what
+is missing, and which local evidence files a future user, maintainer, or model
+should inspect next. It is not a zip archive, dashboard, or semantic evaluator.
+
 ## Layer Mapping
 
 | System layer | Demo evidence |
@@ -154,7 +219,9 @@ That failure mode is useful. It proves that the harness can distinguish
 | Workspace ledger | `STATUS.md`, `CHECKPOINTS.md`, `DECISIONS.md`, `papers/`, `outline/`, and `output/` exist under the workspace |
 | Developer harness | `pipeline.py doctor` writes `DOCTOR_REPORT.md` and `DOCTOR_REPORT.json` |
 | Run audit | `pipeline.py audit` writes `RUN_AUDIT.md` and `RUN_AUDIT.json` |
-| Machine contract | JSON sidecars use `doctor-report.v1` and `run-audit.v1` |
+| Repair map | `pipeline.py improve` writes `IMPROVEMENT_REPORT.md` and `IMPROVEMENT_REPORT.json` |
+| Handoff manifest | `pipeline.py pack` writes `ARTIFACT_PACK.md` and `ARTIFACT_PACK.json` |
+| Machine contract | JSON sidecars use `doctor-report.v1`, `run-audit.v1`, `improvement-report.v1`, and `artifact-pack.v1` |
 | Governance boundary | The audit returns `ATTENTION` until target artifacts are produced |
 
 ## What This Does Not Prove
@@ -164,7 +231,7 @@ draft quality, or completed semantic execution. It proves the current harness
 loop:
 
 ```text
-goal -> pipeline lock -> unit ledger -> workspace diagnosis -> run audit
+goal -> pipeline lock -> unit ledger -> workspace diagnosis -> run audit -> repair map -> artifact pack
 ```
 
 The next deeper demo would run semantic units, inspect unit output manifests,

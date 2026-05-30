@@ -33,7 +33,12 @@ def _write_minimal_harness_docs(repo_root: Path) -> None:
     (docs_dir / "HARNESS_OPERATING_MODEL.md").write_text("# Harness Operating Model\n", encoding="utf-8")
     (docs_dir / "HARNESS_SYSTEM_MAP.md").write_text("# Harness System Map\n", encoding="utf-8")
     (docs_dir / "HARNESS_SHOWCASE.md").write_text("# Harness Showcase\n", encoding="utf-8")
-    (docs_dir / "HARNESS_RUN_WALKTHROUGH.md").write_text("# Harness Run Walkthrough\n", encoding="utf-8")
+    (docs_dir / "HARNESS_RUN_WALKTHROUGH.md").write_text(
+        "# Harness Run Walkthrough\n\n"
+        + "\n".join(validate_repo.HARNESS_RUN_WALKTHROUGH_REQUIRED_TERMS)
+        + "\n",
+        encoding="utf-8",
+    )
     (docs_dir / "HARNESS_IMPROVEMENT_LOOP.md").write_text("# Harness Improvement Loop\n", encoding="utf-8")
     (docs_dir / "ARTIFACT_INTERFACE_STANDARD.md").write_text(
         "\n".join(
@@ -391,6 +396,32 @@ def test_harness_docs_validation_reports_missing_readiness_audit_metadata(tmp_pa
             "`docs/HARNESS_READINESS_AUDIT.md` is missing readiness audit metadata: "
             "`harness-readiness-audit.v1`, `python scripts/readiness_audit.py`, "
             "`docs/HARNESS_READINESS.md`.",
+        )
+    ]
+
+
+def test_harness_docs_validation_reports_missing_walkthrough_pack_terms(tmp_path: Path) -> None:
+    _write_minimal_harness_docs(tmp_path)
+    (tmp_path / "README.md").write_text(_readme_with_harness_links(), encoding="utf-8")
+    (tmp_path / "README.zh-CN.md").write_text(_readme_with_harness_links(), encoding="utf-8")
+    (tmp_path / "docs" / "HARNESS_RUN_WALKTHROUGH.md").write_text(
+        "# Harness Run Walkthrough\n\npython scripts/pipeline.py kickoff\n",
+        encoding="utf-8",
+    )
+
+    findings = validate_repo._validate_harness_docs(repo_root=tmp_path, docs_dir=tmp_path / "docs")
+
+    assert [(item.level, item.message) for item in findings] == [
+        (
+            "WARN",
+            "`docs/HARNESS_RUN_WALKTHROUGH.md` is missing walkthrough command/artifact terms: "
+            "`python scripts/pipeline.py doctor --workspace`, "
+            "`python scripts/pipeline.py audit --workspace`, "
+            "`python scripts/pipeline.py improve --workspace`, "
+            "`python scripts/pipeline.py pack --workspace`, "
+            "`output/DOCTOR_REPORT.json`, `output/RUN_AUDIT.json`, "
+            "`output/IMPROVEMENT_REPORT.json`, `output/ARTIFACT_PACK.json`, "
+            "`doctor-report.v1`, `run-audit.v1`, `improvement-report.v1`, `artifact-pack.v1`.",
         )
     ]
 

@@ -179,7 +179,7 @@ For the architecture view, start with [docs/AUTO_RESEARCH_HARNESS.md](docs/AUTO_
 3. Read [docs/HARNESS_SHOWCASE.md](docs/HARNESS_SHOWCASE.md) to inspect a final deliverable first and trace it backward.
 4. Read [docs/HARNESS_OPERATING_MODEL.md](docs/HARNESS_OPERATING_MODEL.md) for the pyramid model and system story.
 5. Read [docs/HARNESS_SYSTEM_MAP.md](docs/HARNESS_SYSTEM_MAP.md) for the visual layer and execution loop.
-6. Read [docs/HARNESS_RUN_WALKTHROUGH.md](docs/HARNESS_RUN_WALKTHROUGH.md) for a real initialized workspace, doctor report, and run audit.
+6. Read [docs/HARNESS_RUN_WALKTHROUGH.md](docs/HARNESS_RUN_WALKTHROUGH.md) for a real initialized workspace, doctor report, run audit, improvement report, and artifact-pack manifest.
 7. Read [docs/HARNESS_IMPROVEMENT_LOOP.md](docs/HARNESS_IMPROVEMENT_LOOP.md) to understand how final-deliverable defects should repair intermediate artifacts and contracts.
 8. Read [docs/ARTIFACT_INTERFACE_STANDARD.md](docs/ARTIFACT_INTERFACE_STANDARD.md) before adding a new intermediate report, table, sidecar, or artifact pack.
 9. Read [docs/HARNESS_ARCHITECTURE.md](docs/HARNESS_ARCHITECTURE.md) if you are changing the system rather than only running it.

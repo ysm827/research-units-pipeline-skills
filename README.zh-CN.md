@@ -179,7 +179,7 @@ python scripts/pipeline.py pack --workspace workspaces/<name> --write
 3. 再看 [docs/HARNESS_SHOWCASE.md](docs/HARNESS_SHOWCASE.md)，先看最终交付物，再反向追溯中间 artifacts。
 4. 再看 [docs/HARNESS_OPERATING_MODEL.md](docs/HARNESS_OPERATING_MODEL.md)，理解金字塔模型和系统故事。
 5. 再看 [docs/HARNESS_SYSTEM_MAP.md](docs/HARNESS_SYSTEM_MAP.md)，理解层级关系和执行闭环。
-6. 再看 [docs/HARNESS_RUN_WALKTHROUGH.md](docs/HARNESS_RUN_WALKTHROUGH.md)，理解一个真实初始化 workspace、doctor report 和 run audit 如何串起来。
+6. 再看 [docs/HARNESS_RUN_WALKTHROUGH.md](docs/HARNESS_RUN_WALKTHROUGH.md)，理解一个真实初始化 workspace、doctor report、run audit、improvement report 和 artifact-pack manifest 如何串起来。
 7. 再看 [docs/HARNESS_IMPROVEMENT_LOOP.md](docs/HARNESS_IMPROVEMENT_LOOP.md)，理解最终交付物的问题如何反向修复中间 artifacts 和合同。
 8. 如果要新增中间 report、表格、sidecar 或 artifact pack，再看 [docs/ARTIFACT_INTERFACE_STANDARD.md](docs/ARTIFACT_INTERFACE_STANDARD.md)。
 9. 如果你要改系统而不是只运行流程，再看 [docs/HARNESS_ARCHITECTURE.md](docs/HARNESS_ARCHITECTURE.md)。
