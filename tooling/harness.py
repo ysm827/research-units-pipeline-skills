@@ -85,6 +85,19 @@ RUN_AUDIT_DIFF_REQUIRED_KEYS = (
     "verdict",
     "exit_code",
 )
+IMPROVEMENT_REPORT_SCHEMA = "improvement-report.v1"
+IMPROVEMENT_REPORT_REQUIRED_KEYS = (
+    "schema",
+    "generated_at",
+    "workspace",
+    "repo",
+    "pipeline",
+    "artifact_interface_standard",
+    "source_reports",
+    "suggestions",
+    "verdict",
+    "exit_code",
+)
 
 
 @dataclass(frozen=True)
@@ -464,6 +477,61 @@ def validate_run_audit_diff_payload(payload: dict[str, Any]) -> list[str]:
             if not isinstance(item, str):
                 issues.append(f"`comparison_issues[{idx}]` must be a string")
 
+    return issues
+
+
+def validate_improvement_payload(payload: dict[str, Any]) -> list[str]:
+    """Validate the stable shape future tooling can rely on for improvement-report.v1."""
+    issues = _validate_payload_header(
+        payload,
+        expected_schema=IMPROVEMENT_REPORT_SCHEMA,
+        required_keys=IMPROVEMENT_REPORT_REQUIRED_KEYS,
+        string_keys=(
+            "generated_at",
+            "workspace",
+            "repo",
+            "pipeline",
+            "artifact_interface_standard",
+            "verdict",
+        ),
+        integer_keys=("exit_code",),
+    )
+    if not isinstance(payload, dict):
+        return issues
+
+    source_reports = _validate_object_field(payload, key="source_reports", issues=issues)
+    if source_reports is not None:
+        for name, record in source_reports.items():
+            if not isinstance(name, str):
+                issues.append("`source_reports` keys must be strings")
+            if not isinstance(record, dict):
+                issues.append(f"`source_reports.{name}` must be an object")
+                continue
+            for key in ("schema", "verdict"):
+                if not isinstance(record.get(key), str):
+                    issues.append(f"`source_reports.{name}.{key}` must be a string")
+            if not isinstance(record.get("exit_code"), int):
+                issues.append(f"`source_reports.{name}.exit_code` must be an integer")
+
+    suggestions = _validate_list_field(payload, key="suggestions", issues=issues)
+    if suggestions is not None:
+        required = (
+            "id",
+            "source_report",
+            "observed_problem",
+            "evidence",
+            "upstream_interface",
+            "repair_surface",
+            "recommended_action",
+            "validation",
+        )
+        for idx, suggestion in enumerate(suggestions):
+            if not isinstance(suggestion, dict):
+                issues.append(f"`suggestions[{idx}]` must be an object")
+                continue
+            for key in required:
+                if not isinstance(suggestion.get(key), str):
+                    issues.append(f"`suggestions[{idx}].{key}` must be a string")
     return issues
 
 
@@ -876,6 +944,159 @@ def write_run_audit_diff_json(*, output_dir: Path, payload: dict[str, Any]) -> P
     path = output_dir / "RUN_AUDIT_DIFF.json"
     atomic_write_text(path, json.dumps(payload, ensure_ascii=False, indent=2, sort_keys=True) + "\n")
     return path
+
+
+def build_improvement_payload(*, workspace: Path, repo_root: Path) -> tuple[int, dict[str, Any]]:
+    doctor_exit, doctor_payload = build_doctor_payload(workspace=workspace, repo_root=repo_root)
+    audit_exit, audit_payload = build_run_audit_payload(workspace=workspace, repo_root=repo_root)
+    suggestions = _improvement_suggestion_records(
+        workspace=workspace,
+        doctor_payload=doctor_payload,
+        run_audit_payload=audit_payload,
+    )
+    exit_code = 2 if suggestions or doctor_exit or audit_exit else 0
+    payload = {
+        "schema": IMPROVEMENT_REPORT_SCHEMA,
+        "generated_at": now_iso_seconds(),
+        "workspace": str(workspace),
+        "repo": str(repo_root),
+        "pipeline": str(audit_payload.get("pipeline") or ""),
+        "artifact_interface_standard": "docs/ARTIFACT_INTERFACE_STANDARD.md",
+        "source_reports": {
+            "doctor": {
+                "schema": str(doctor_payload.get("schema") or ""),
+                "verdict": str(doctor_payload.get("verdict") or ""),
+                "exit_code": int(doctor_payload.get("exit_code") or 0),
+            },
+            "run_audit": {
+                "schema": str(audit_payload.get("schema") or ""),
+                "verdict": str(audit_payload.get("verdict") or ""),
+                "exit_code": int(audit_payload.get("exit_code") or 0),
+            },
+        },
+        "suggestions": suggestions,
+        "verdict": "ATTENTION" if suggestions else "PASS",
+        "exit_code": exit_code,
+    }
+    return exit_code, payload
+
+
+def render_improvement_report(payload: dict[str, Any]) -> str:
+    lines = [
+        "# Improvement report",
+        "",
+        f"- Workspace: `{payload.get('workspace')}`",
+        f"- Repo: `{payload.get('repo')}`",
+        f"- Generated at: `{payload.get('generated_at')}`",
+        f"- Pipeline: `{payload.get('pipeline')}`" if payload.get("pipeline") else "- Pipeline: unknown",
+        f"- Artifact interface standard: `{payload.get('artifact_interface_standard')}`",
+        f"- JSON sidecar: `output/IMPROVEMENT_REPORT.json`",
+    ]
+
+    lines.extend(["", "## Source reports"])
+    source_reports = payload.get("source_reports") or {}
+    if not source_reports:
+        lines.append("- No source reports")
+    else:
+        for name, record in source_reports.items():
+            lines.append(
+                f"- `{name}`: {record.get('schema')} {record.get('verdict')} "
+                f"(exit {record.get('exit_code')})"
+            )
+
+    lines.extend(["", "## Repair suggestions"])
+    suggestions = payload.get("suggestions") or []
+    if not suggestions:
+        lines.append("- No repair suggestions; doctor and run audit did not surface harness issues.")
+    else:
+        for suggestion in suggestions:
+            lines.extend(
+                [
+                    f"### {suggestion.get('id')} - {suggestion.get('upstream_interface')}",
+                    "",
+                    f"- Source report: `{suggestion.get('source_report')}`",
+                    f"- Observed problem: {suggestion.get('observed_problem')}",
+                    f"- Evidence: {suggestion.get('evidence')}",
+                    f"- Repair surface: `{suggestion.get('repair_surface')}`",
+                    f"- Recommended action: {suggestion.get('recommended_action')}",
+                    f"- Validation: `{suggestion.get('validation')}`",
+                    "",
+                ]
+            )
+
+    lines.extend(["## Improvement verdict", f"- {payload.get('verdict') or 'ATTENTION'}"])
+    return "\n".join(lines).rstrip() + "\n"
+
+
+def write_improvement_report(*, workspace: Path, report: str) -> Path:
+    path = workspace / "output" / "IMPROVEMENT_REPORT.md"
+    atomic_write_text(path, report)
+    return path
+
+
+def write_improvement_json(*, workspace: Path, payload: dict[str, Any]) -> Path:
+    path = workspace / "output" / "IMPROVEMENT_REPORT.json"
+    atomic_write_text(path, json.dumps(payload, ensure_ascii=False, indent=2, sort_keys=True) + "\n")
+    return path
+
+
+def _improvement_suggestion_records(
+    *,
+    workspace: Path,
+    doctor_payload: dict[str, Any],
+    run_audit_payload: dict[str, Any],
+) -> list[dict[str, str]]:
+    records: list[dict[str, str]] = []
+    seen: set[tuple[str, str, str]] = set()
+    for source_report, payload in (("doctor", doctor_payload), ("run_audit", run_audit_payload)):
+        for issue in payload.get("harness_issues") or []:
+            if not isinstance(issue, dict):
+                continue
+            code = str(issue.get("code") or "")
+            message = str(issue.get("message") or "")
+            key = (source_report, code, message)
+            if key in seen:
+                continue
+            seen.add(key)
+            records.append(
+                {
+                    "id": f"S{len(records) + 1:03d}",
+                    "source_report": source_report,
+                    "observed_problem": message,
+                    "evidence": f"{str(issue.get('level') or 'INFO')} `{code}`",
+                    "upstream_interface": _issue_upstream_interface(code),
+                    "repair_surface": str(issue.get("remediation_category") or "inspect_workspace_state"),
+                    "recommended_action": str(issue.get("next_action") or "Inspect the workspace state and rerun harness checks."),
+                    "validation": _issue_validation_command(code, workspace),
+                }
+            )
+    return records
+
+
+def _issue_upstream_interface(code: str) -> str:
+    if code in {"missing_units", "missing_units_field", "missing_unit_id", "duplicate_unit_id", "invalid_owner"}:
+        return "Execution ledger / UNITS.csv"
+    if code == "invalid_status":
+        return "Execution ledger / unit status"
+    if code == "human_checkpoint_missing":
+        return "Human checkpoint / DECISIONS.md"
+    if code in {"missing_dependency", "dependency_cycle"}:
+        return "Workflow protocol / dependency graph"
+    if code == "missing_done_output":
+        return "Artifact contract / unit outputs"
+    if code == "missing_target_artifact":
+        return "Target artifact contract"
+    return "Workspace evidence surface"
+
+
+def _issue_validation_command(code: str, workspace: Path) -> str:
+    if code in {"missing_target_artifact", "missing_done_output"}:
+        return f"python scripts/pipeline.py audit --workspace {workspace} --write"
+    if code in {"missing_units", "missing_units_field", "missing_unit_id", "duplicate_unit_id", "invalid_status", "invalid_owner"}:
+        return f"python scripts/pipeline.py doctor --workspace {workspace} --write"
+    if code in {"missing_dependency", "dependency_cycle", "human_checkpoint_missing"}:
+        return f"python scripts/pipeline.py doctor --workspace {workspace} --write"
+    return f"python scripts/pipeline.py improve --workspace {workspace} --write"
 
 
 def find_next_runnable(table: UnitsTable) -> dict[str, str] | None:

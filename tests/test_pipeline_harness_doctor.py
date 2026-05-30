@@ -9,6 +9,7 @@ from pathlib import Path
 from tooling.executor import run_one_unit
 from tooling.harness import (
     validate_doctor_payload,
+    validate_improvement_payload,
     validate_run_audit_diff_payload,
     validate_run_audit_payload,
     write_unit_manifest,
@@ -409,6 +410,69 @@ def test_audit_reports_missing_target_artifacts(tmp_path: Path) -> None:
     assert "ERROR `missing_target_artifact`: Target artifact `output/SNAPSHOT.md` is missing" in result.stdout
     assert "Remediation: `repair_run_artifacts`" in result.stdout
     assert "ATTENTION" in result.stdout
+
+
+def test_improve_writes_repair_suggestions_from_run_evidence(tmp_path: Path) -> None:
+    workspace = tmp_path / "ws"
+    write_units(
+        workspace / "UNITS.csv",
+        [
+            {
+                "unit_id": "U001",
+                "title": "Snapshot",
+                "skill": "snapshot-writer",
+                "owner": "CODEX",
+                "outputs": "output/SNAPSHOT.md",
+                "status": "DONE",
+            }
+        ],
+    )
+    (workspace / "PIPELINE.lock.md").write_text(
+        "pipeline: pipelines/research-brief.pipeline.md\n"
+        "units_template: templates/UNITS.research-brief.csv\n"
+        "locked_at: 2026-05-30\n",
+        encoding="utf-8",
+    )
+
+    result = run_command("scripts/pipeline.py", "improve", "--workspace", str(workspace), "--write")
+
+    report_path = workspace / "output" / "IMPROVEMENT_REPORT.md"
+    json_path = workspace / "output" / "IMPROVEMENT_REPORT.json"
+    assert result.returncode == 2, result.stdout
+    assert report_path.exists()
+    assert json_path.exists()
+    assert "Improvement report" in result.stdout
+    assert "Target artifact contract" in result.stdout
+    assert "repair_run_artifacts" in result.stdout
+    assert "python scripts/pipeline.py audit --workspace" in result.stdout
+    payload = json.loads(json_path.read_text(encoding="utf-8"))
+    assert payload["schema"] == "improvement-report.v1"
+    assert payload["verdict"] == "ATTENTION"
+    assert payload["artifact_interface_standard"] == "docs/ARTIFACT_INTERFACE_STANDARD.md"
+    assert payload["suggestions"][0]["upstream_interface"] == "Artifact contract / unit outputs"
+    assert validate_improvement_payload(payload) == []
+
+
+def test_improvement_payload_validator_reports_shape_errors() -> None:
+    payload = {
+        "schema": "improvement-report.v2",
+        "generated_at": "2026-05-30T00:00:00",
+        "workspace": "/tmp/ws",
+        "repo": "/tmp/repo",
+        "pipeline": "research-brief",
+        "artifact_interface_standard": "docs/ARTIFACT_INTERFACE_STANDARD.md",
+        "source_reports": {"doctor": {"schema": "doctor-report.v1", "verdict": "PASS", "exit_code": "0"}},
+        "suggestions": [{"id": "S001", "source_report": "doctor", "observed_problem": 123}],
+        "verdict": "PASS",
+        "exit_code": 0,
+    }
+
+    issues = validate_improvement_payload(payload)
+
+    assert "`schema` must be `improvement-report.v1`" in issues
+    assert "`source_reports.doctor.exit_code` must be an integer" in issues
+    assert "`suggestions[0].observed_problem` must be a string" in issues
+    assert "`suggestions[0].repair_surface` must be a string" in issues
 
 
 def test_audit_diff_reports_improved_target_artifact_coverage(tmp_path: Path) -> None:

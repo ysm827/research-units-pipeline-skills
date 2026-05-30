@@ -20,7 +20,7 @@ The architecture is easiest to read as a five-layer pyramid:
 
 Read [docs/AUTO_RESEARCH_HARNESS.md](docs/AUTO_RESEARCH_HARNESS.md) first for the research-program framing, then [docs/HARNESS_OPERATING_MODEL.md](docs/HARNESS_OPERATING_MODEL.md) for the pyramid model. If you want to inspect an output before learning the machinery, start with [docs/HARNESS_SHOWCASE.md](docs/HARNESS_SHOWCASE.md).
 
-The self-improvement story is intentionally bounded: a weak final deliverable should be traced back to intermediate artifacts, workflow protocols, skills, model limits, or harness fallbacks, then repaired through visible contracts and validation. See [docs/HARNESS_IMPROVEMENT_LOOP.md](docs/HARNESS_IMPROVEMENT_LOOP.md).
+The self-improvement story is intentionally bounded: a weak final deliverable should be traced back to intermediate artifacts, workflow protocols, skills, model limits, or harness fallbacks, then repaired through visible contracts and validation. See [docs/HARNESS_IMPROVEMENT_LOOP.md](docs/HARNESS_IMPROVEMENT_LOOP.md). The interface standard for intermediate artifacts lives in [docs/ARTIFACT_INTERFACE_STANDARD.md](docs/ARTIFACT_INTERFACE_STANDARD.md).
 
 ## What This Repo Covers
 
@@ -162,13 +162,14 @@ python scripts/pipeline.py doctor --workspace workspaces/<name>
 python scripts/pipeline.py doctor --workspace workspaces/<name> --write
 python scripts/pipeline.py audit --workspace workspaces/<name> --write
 python scripts/pipeline.py audit-diff --before workspaces/<name>/output/RUN_AUDIT.before.json --after workspaces/<name>/output/RUN_AUDIT.json --write
+python scripts/pipeline.py improve --workspace workspaces/<name> --write
 ```
 
 `validate_repo.py --strict --no-check-quality` is the blocking contract gate for executable pipelines. `audit_skills.py --fail-on WARN` is the local skill hygiene check: WARN-level findings should be actionable repair targets, while INFO findings remain review signals grouped by `review_category` with a `next_action` such as syntax placeholder, reference example, placeholder policy, asset palette, or anti-pattern guidance. Use `--review-category` and `--limit` to inspect one review queue without printing the full report; use `--summary-only` when you only need grouped counts. `readiness_audit.py` checks the evidence surfaces needed before a final harness closure audit; it does not run tests or mark the goal complete. `showcase_audit.py` checks the portable examples under `example/` so the deliverable-first exhibit has real outputs, protocol links, evidence reports, and a visual lineage asset. `pipeline.py doctor` is the workspace-level harness check: it shows the current checkpoint, unit status counts, the next runnable unit, missing dependencies, missing DONE outputs, typed remediation categories, and next actions. Add `--write` to persist the same diagnosis to `output/DOCTOR_REPORT.md` and `output/DOCTOR_REPORT.json`. `pipeline.py audit --write` creates `output/RUN_AUDIT.md` and `output/RUN_AUDIT.json`, a compact run ledger covering workspace files, unit status, target artifact coverage, manifests, recent harness reports, and the audit verdict. Scripted units also write `output/unit_logs/<unit>.<skill>.manifest.json` with output hashes for traceability.
 
-`pipeline.py audit-diff` compares two valid `RUN_AUDIT.json` payloads and, with `--write`, writes `RUN_AUDIT_DIFF.md` and `RUN_AUDIT_DIFF.json` beside the after payload. Use it when a repair or later unit should prove that target artifacts, unit status, manifests, or harness issues improved rather than merely changed.
+`pipeline.py audit-diff` compares two valid `RUN_AUDIT.json` payloads and, with `--write`, writes `RUN_AUDIT_DIFF.md` and `RUN_AUDIT_DIFF.json` beside the after payload. Use it when a repair or later unit should prove that target artifacts, unit status, manifests, or harness issues improved rather than merely changed. `pipeline.py improve --write` creates `output/IMPROVEMENT_REPORT.md` and `output/IMPROVEMENT_REPORT.json`, a local repair map that turns doctor/run-audit evidence into upstream interfaces, repair surfaces, and validation commands.
 
-For the architecture view, start with [docs/AUTO_RESEARCH_HARNESS.md](docs/AUTO_RESEARCH_HARNESS.md), then use [docs/HARNESS_OPERATING_MODEL.md](docs/HARNESS_OPERATING_MODEL.md), [docs/HARNESS_ARCHITECTURE.md](docs/HARNESS_ARCHITECTURE.md), the visual layer map in [docs/HARNESS_SYSTEM_MAP.md](docs/HARNESS_SYSTEM_MAP.md), the deliverable-first exhibit in [docs/HARNESS_SHOWCASE.md](docs/HARNESS_SHOWCASE.md), the command-level run walkthrough in [docs/HARNESS_RUN_WALKTHROUGH.md](docs/HARNESS_RUN_WALKTHROUGH.md), and the bounded self-improvement model in [docs/HARNESS_IMPROVEMENT_LOOP.md](docs/HARNESS_IMPROVEMENT_LOOP.md). The staged upgrade path lives in [docs/HARNESS_ROADMAP.md](docs/HARNESS_ROADMAP.md), the current completion evidence ledger lives in [docs/HARNESS_READINESS.md](docs/HARNESS_READINESS.md), the fast readiness audit contract lives in [docs/HARNESS_READINESS_AUDIT.md](docs/HARNESS_READINESS_AUDIT.md), the external pattern mapping lives in [docs/PATTERN_REGISTER.md](docs/PATTERN_REGISTER.md), the `skill-audit-report.v1` field contract lives in [docs/SKILL_AUDIT_SCHEMA.md](docs/SKILL_AUDIT_SCHEMA.md), the `doctor-report.v1` field contract lives in [docs/DOCTOR_REPORT_SCHEMA.md](docs/DOCTOR_REPORT_SCHEMA.md), the `run-audit.v1` field contract lives in [docs/RUN_AUDIT_SCHEMA.md](docs/RUN_AUDIT_SCHEMA.md), the `run-audit-diff.v1` field contract lives in [docs/RUN_AUDIT_DIFF_SCHEMA.md](docs/RUN_AUDIT_DIFF_SCHEMA.md), and the `harness-showcase-audit.v1` field contract lives in [docs/SHOWCASE_AUDIT_SCHEMA.md](docs/SHOWCASE_AUDIT_SCHEMA.md). Architectural decisions live under [docs/adr/](docs/adr/), including the skills-vs-harness split and the doctor/run-audit/audit-diff/showcase-audit JSON decisions.
+For the architecture view, start with [docs/AUTO_RESEARCH_HARNESS.md](docs/AUTO_RESEARCH_HARNESS.md), then use [docs/HARNESS_OPERATING_MODEL.md](docs/HARNESS_OPERATING_MODEL.md), [docs/HARNESS_ARCHITECTURE.md](docs/HARNESS_ARCHITECTURE.md), the visual layer map in [docs/HARNESS_SYSTEM_MAP.md](docs/HARNESS_SYSTEM_MAP.md), the deliverable-first exhibit in [docs/HARNESS_SHOWCASE.md](docs/HARNESS_SHOWCASE.md), the command-level run walkthrough in [docs/HARNESS_RUN_WALKTHROUGH.md](docs/HARNESS_RUN_WALKTHROUGH.md), the bounded self-improvement model in [docs/HARNESS_IMPROVEMENT_LOOP.md](docs/HARNESS_IMPROVEMENT_LOOP.md), and the artifact interface standard in [docs/ARTIFACT_INTERFACE_STANDARD.md](docs/ARTIFACT_INTERFACE_STANDARD.md). The staged upgrade path lives in [docs/HARNESS_ROADMAP.md](docs/HARNESS_ROADMAP.md), the current completion evidence ledger lives in [docs/HARNESS_READINESS.md](docs/HARNESS_READINESS.md), the fast readiness audit contract lives in [docs/HARNESS_READINESS_AUDIT.md](docs/HARNESS_READINESS_AUDIT.md), the external pattern mapping lives in [docs/PATTERN_REGISTER.md](docs/PATTERN_REGISTER.md), the `skill-audit-report.v1` field contract lives in [docs/SKILL_AUDIT_SCHEMA.md](docs/SKILL_AUDIT_SCHEMA.md), the `doctor-report.v1` field contract lives in [docs/DOCTOR_REPORT_SCHEMA.md](docs/DOCTOR_REPORT_SCHEMA.md), the `run-audit.v1` field contract lives in [docs/RUN_AUDIT_SCHEMA.md](docs/RUN_AUDIT_SCHEMA.md), the `run-audit-diff.v1` field contract lives in [docs/RUN_AUDIT_DIFF_SCHEMA.md](docs/RUN_AUDIT_DIFF_SCHEMA.md), the `harness-showcase-audit.v1` field contract lives in [docs/SHOWCASE_AUDIT_SCHEMA.md](docs/SHOWCASE_AUDIT_SCHEMA.md), and the `improvement-report.v1` field contract lives in [docs/IMPROVEMENT_REPORT_SCHEMA.md](docs/IMPROVEMENT_REPORT_SCHEMA.md). Architectural decisions live under [docs/adr/](docs/adr/), including the skills-vs-harness split and the doctor/run-audit/audit-diff/showcase-audit/improvement-report JSON decisions.
 
 ## Recommended Reading Path
 
@@ -179,11 +180,12 @@ For the architecture view, start with [docs/AUTO_RESEARCH_HARNESS.md](docs/AUTO_
 5. Read [docs/HARNESS_SYSTEM_MAP.md](docs/HARNESS_SYSTEM_MAP.md) for the visual layer and execution loop.
 6. Read [docs/HARNESS_RUN_WALKTHROUGH.md](docs/HARNESS_RUN_WALKTHROUGH.md) for a real initialized workspace, doctor report, and run audit.
 7. Read [docs/HARNESS_IMPROVEMENT_LOOP.md](docs/HARNESS_IMPROVEMENT_LOOP.md) to understand how final-deliverable defects should repair intermediate artifacts and contracts.
-8. Read [docs/HARNESS_ARCHITECTURE.md](docs/HARNESS_ARCHITECTURE.md) if you are changing the system rather than only running it.
-9. Use [docs/HARNESS_ROADMAP.md](docs/HARNESS_ROADMAP.md) to see which upgrades are adopted, deferred, or next.
-10. Open the feature guide that matches your task and language.
-11. Open the matching pipeline contract under `pipelines/`.
-12. Inspect the relevant skills under `.codex/skills/` if you need to change behavior rather than just run it.
+8. Read [docs/ARTIFACT_INTERFACE_STANDARD.md](docs/ARTIFACT_INTERFACE_STANDARD.md) before adding a new intermediate report, table, sidecar, or artifact pack.
+9. Read [docs/HARNESS_ARCHITECTURE.md](docs/HARNESS_ARCHITECTURE.md) if you are changing the system rather than only running it.
+10. Use [docs/HARNESS_ROADMAP.md](docs/HARNESS_ROADMAP.md) to see which upgrades are adopted, deferred, or next.
+11. Open the feature guide that matches your task and language.
+12. Open the matching pipeline contract under `pipelines/`.
+13. Inspect the relevant skills under `.codex/skills/` if you need to change behavior rather than just run it.
 
 ## Documentation Map
 
@@ -208,6 +210,7 @@ Project references:
 - [docs/HARNESS_SHOWCASE.md](docs/HARNESS_SHOWCASE.md)
 - [docs/HARNESS_RUN_WALKTHROUGH.md](docs/HARNESS_RUN_WALKTHROUGH.md)
 - [docs/HARNESS_IMPROVEMENT_LOOP.md](docs/HARNESS_IMPROVEMENT_LOOP.md)
+- [docs/ARTIFACT_INTERFACE_STANDARD.md](docs/ARTIFACT_INTERFACE_STANDARD.md)
 - [docs/PIPELINE_TAXONOMY.md](docs/PIPELINE_TAXONOMY.md)
 - [docs/PROJECT_LANGUAGE.md](docs/PROJECT_LANGUAGE.md)
 - [docs/HARNESS_ROADMAP.md](docs/HARNESS_ROADMAP.md)
@@ -219,6 +222,7 @@ Project references:
 - [docs/RUN_AUDIT_SCHEMA.md](docs/RUN_AUDIT_SCHEMA.md)
 - [docs/RUN_AUDIT_DIFF_SCHEMA.md](docs/RUN_AUDIT_DIFF_SCHEMA.md)
 - [docs/SHOWCASE_AUDIT_SCHEMA.md](docs/SHOWCASE_AUDIT_SCHEMA.md)
+- [docs/IMPROVEMENT_REPORT_SCHEMA.md](docs/IMPROVEMENT_REPORT_SCHEMA.md)
 - [docs/adr/](docs/adr/)
 - [SKILL_INDEX.md](SKILL_INDEX.md)
 - [SKILLS_STANDARD.md](SKILLS_STANDARD.md)

@@ -16,7 +16,9 @@ For visuals, use `docs/HARNESS_SYSTEM_MAP.md`. For a deliverable-first exhibit,
 use `docs/HARNESS_SHOWCASE.md`. For a command-level run, use
 `docs/HARNESS_RUN_WALKTHROUGH.md`. For the bounded self-improvement control
 loop, use `docs/HARNESS_IMPROVEMENT_LOOP.md`. For closure evidence, use
-`docs/HARNESS_READINESS.md` and `docs/HARNESS_READINESS_AUDIT.md`. External
+`docs/HARNESS_READINESS.md` and `docs/HARNESS_READINESS_AUDIT.md`. The
+artifact interface standard for intermediate reports, tables, sidecars, and
+artifact packs lives in `docs/ARTIFACT_INTERFACE_STANDARD.md`. External
 patterns are tracked in `docs/PATTERN_REGISTER.md`; canonical terms are tracked
 in `docs/PROJECT_LANGUAGE.md`.
 
@@ -49,7 +51,7 @@ research intent
 | Workflow Protocol | What method constrains this class of work? | `pipelines/*.pipeline.md`, `templates/UNITS.*.csv`, `docs/PIPELINE_TAXONOMY.md` |
 | Execution Ledger | Where does run state live outside chat memory? | `workspaces/<name>/`, `PIPELINE.lock.md`, `UNITS.csv`, `STATUS.md`, `CHECKPOINTS.md`, `DECISIONS.md`, `output/*` |
 | Evidence Loop | How is run health diagnosed and compared? | `pipeline.py doctor`, `pipeline.py audit`, `pipeline.py audit-diff`, quality gates, manifests, JSON sidecars |
-| Improvement Loop | How do final-deliverable defects repair earlier artifacts and contracts? | `docs/HARNESS_IMPROVEMENT_LOOP.md`, audit diffs, schema docs, validation tests, skill and pipeline edits |
+| Improvement Loop | How do final-deliverable defects repair earlier artifacts and contracts? | `docs/HARNESS_IMPROVEMENT_LOOP.md`, `docs/ARTIFACT_INTERFACE_STANDARD.md`, audit diffs, schema docs, validation tests, skill and pipeline edits |
 | Learning Layer | How do repeated lessons become reusable assets? | `docs/PROJECT_LANGUAGE.md`, `docs/adr/`, `docs/PATTERN_REGISTER.md`, `docs/HARNESS_ROADMAP.md`, validation tests |
 
 The abstract layer should drive future naming and explanation. The concrete
@@ -140,6 +142,9 @@ The evidence loop supplies deterministic observation and comparison:
 - `pipeline.py audit-diff --write` compares two `RUN_AUDIT.json` payloads and
   writes `RUN_AUDIT_DIFF.md` plus `RUN_AUDIT_DIFF.json` beside the later
   payload.
+- `pipeline.py improve --write` writes `IMPROVEMENT_REPORT.md` plus
+  `IMPROVEMENT_REPORT.json`, mapping doctor/run-audit evidence to upstream
+  interfaces, local repair surfaces, and validation commands.
 - `validate_repo.py` protects pipeline contracts, docs entrypoints, schema
   references, ADR format, pattern-register metadata, and terminology alignment.
 - `audit_skills.py` reports skill hygiene findings with stable JSON output,
@@ -154,11 +159,13 @@ The evidence loop supplies deterministic observation and comparison:
 Authoritative files:
 
 - `docs/HARNESS_IMPROVEMENT_LOOP.md`
+- `docs/ARTIFACT_INTERFACE_STANDARD.md`
 - `docs/HARNESS_SHOWCASE.md`
 - `docs/HARNESS_RUN_WALKTHROUGH.md`
 - `docs/RUN_AUDIT_SCHEMA.md`
 - `docs/RUN_AUDIT_DIFF_SCHEMA.md`
 - `docs/SHOWCASE_AUDIT_SCHEMA.md`
+- `docs/IMPROVEMENT_REPORT_SCHEMA.md`
 - `tests/test_harness_validation.py`
 
 The improvement loop is the project-specific answer to self-improvement. It
@@ -168,6 +175,11 @@ each improvement to pass through an inspectable chain:
 ```text
 final defect -> intermediate artifact diagnosis -> repair surface -> validation evidence -> reusable asset
 ```
+
+`docs/ARTIFACT_INTERFACE_STANDARD.md` defines the interface discipline for that
+chain: which artifact path is produced, who consumes it, whether it is
+human-readable, machine-readable, or paired, and which repair surface owns the
+fix when it fails.
 
 The repair surface should be as local as possible:
 
@@ -187,6 +199,7 @@ Schema references:
 - `docs/RUN_AUDIT_SCHEMA.md`
 - `docs/RUN_AUDIT_DIFF_SCHEMA.md`
 - `docs/SHOWCASE_AUDIT_SCHEMA.md`
+- `docs/IMPROVEMENT_REPORT_SCHEMA.md`
 
 ### Learning Layer
 
@@ -196,6 +209,7 @@ Authoritative files:
 - `docs/HARNESS_OPERATING_MODEL.md`
 - `docs/HARNESS_SYSTEM_MAP.md`
 - `docs/HARNESS_IMPROVEMENT_LOOP.md`
+- `docs/ARTIFACT_INTERFACE_STANDARD.md`
 - `docs/PROJECT_LANGUAGE.md`
 - `docs/PIPELINE_TAXONOMY.md`
 - `docs/HARNESS_ROADMAP.md`
@@ -272,6 +286,7 @@ under `workspaces/<name>/` and should be inspected with `pipeline.py doctor`,
 | A reader may see many files before seeing the final product | README now points to the operating model; this doc points to a deliverable-first exemplar | Add more completed exemplar runs only after they are representative and auditable |
 | Initialized workspaces can look successful before final artifacts exist | `pipeline.py audit` reports missing target artifacts and returns `ATTENTION` | Keep target-artifact coverage visible in run audits and audit diffs |
 | Semantic quality is hard to prove mechanically | Skills and quality gates own judgment-heavy checks; audits state their limits | Add representative semantic evaluation fixtures before building a benchmark dashboard |
+| Intermediate artifacts can become inconsistent across workflows | `docs/ARTIFACT_INTERFACE_STANDARD.md` defines the expected producer, consumer, format, trace keys, repair surface, and validation for durable artifacts | Promote repeated artifact-shape drift into schema docs or validation once a stable consumer exists |
 | Terminology can drift as docs evolve | `docs/PROJECT_LANGUAGE.md` and validation checks protect core terms | Promote repeated terminology drift into stricter validation only when cheap to detect |
 | External architecture ideas can become slogans | `docs/PATTERN_REGISTER.md` maps patterns to repo files and adoption status | Add ADRs before adopting heavier runtimes, stores, or dashboards |
 

@@ -5,7 +5,8 @@ This document is the runtime map for the current
 `docs/HARNESS_OPERATING_MODEL.md` by showing how the five operating-model
 layers interact during one run and how repeated runs turn into reusable harness
 assets. `docs/HARNESS_IMPROVEMENT_LOOP.md` defines the self-improvement
-control law that sits across those layers.
+control law that sits across those layers. `docs/ARTIFACT_INTERFACE_STANDARD.md`
+defines the interface discipline for durable intermediate artifacts.
 
 For a command-level example of the same loop, read
 `docs/HARNESS_RUN_WALKTHROUGH.md`.
@@ -47,6 +48,7 @@ There are two supported ways to enter the system today:
    python scripts/pipeline.py doctor --workspace workspaces/<name> --write
    python scripts/pipeline.py audit --workspace workspaces/<name> --write
    python scripts/pipeline.py audit-diff --before <old-RUN_AUDIT.json> --after <new-RUN_AUDIT.json> --write
+   python scripts/pipeline.py improve --workspace workspaces/<name> --write
    ```
 
 `kickoff` can auto-pick from routing hints when `--pipeline` is omitted, but
@@ -88,6 +90,7 @@ flowchart TB
         quality["tooling/quality_gate.py\nartifact checks"]
         doctor["doctor-report.v1\nworkspace diagnosis"]
         run_audit["run-audit.v1 + run-audit-diff.v1\nrun evidence and comparison"]
+        improve_report["improvement-report.v1\nrepair map"]
         tests["tests/ + local harness checks\nsmoke and regression checks"]
     end
 
@@ -97,6 +100,7 @@ flowchart TB
         patterns["docs/PATTERN_REGISTER.md\nexternal patterns mapped to repo files"]
         roadmap["docs/HARNESS_ROADMAP.md\nadopted, deferred, next work"]
         improve["docs/HARNESS_IMPROVEMENT_LOOP.md\nbounded self-improvement model"]
+        artifact_standard["docs/ARTIFACT_INTERFACE_STANDARD.md\nartifact interface standard"]
         readiness["docs/HARNESS_READINESS.md\ncompletion evidence ledger"]
         validate["scripts/validate_repo.py\ncontract/docs/ADR/schema validation"]
         audit_skills["scripts/audit_skills.py\nskill hygiene and JSON report"]
@@ -129,8 +133,11 @@ flowchart TB
     skill_scripts --> executor
     outputs --> doctor
     outputs --> run_audit
+    doctor --> improve_report
+    run_audit --> improve_report
     doctor --> readiness
     run_audit --> readiness
+    improve_report --> readiness
 
     validate --> pipeline
     validate --> units_template
@@ -145,6 +152,10 @@ flowchart TB
     outputs --> improve
     doctor --> improve
     run_audit --> improve
+    improve_report --> improve
+    improve --> artifact_standard
+    artifact_standard --> outputs
+    artifact_standard --> validate
     improve --> skills
     improve --> pipeline
     improve --> validate

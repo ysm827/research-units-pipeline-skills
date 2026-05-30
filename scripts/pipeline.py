@@ -12,14 +12,18 @@ from tooling.common import atomic_write_text, copy_tree, resolve_pipeline_spec_p
 from tooling.executor import run_one_unit
 from tooling.harness import (
     build_doctor_payload,
+    build_improvement_payload,
     build_run_audit_payload,
     build_run_audit_diff_payload,
     load_run_audit_payload,
     render_doctor_report,
+    render_improvement_report,
     render_run_audit_diff_report,
     render_run_audit_report,
     write_doctor_json,
     write_doctor_report,
+    write_improvement_json,
+    write_improvement_report,
     write_run_audit_diff_json,
     write_run_audit_diff_report,
     write_run_audit_json,
@@ -93,6 +97,14 @@ def main() -> int:
     audit_p = sub.add_parser("audit", help="Audit a workspace run ledger and target artifact coverage")
     audit_p.add_argument("--workspace", required=True, help="Workspace directory")
     audit_p.add_argument("--write", action="store_true", help="Write audit artifacts to output/RUN_AUDIT.md and output/RUN_AUDIT.json")
+
+    improve_p = sub.add_parser("improve", help="Suggest upstream repair surfaces from doctor and run-audit evidence")
+    improve_p.add_argument("--workspace", required=True, help="Workspace directory")
+    improve_p.add_argument(
+        "--write",
+        action="store_true",
+        help="Write improvement artifacts to output/IMPROVEMENT_REPORT.md and output/IMPROVEMENT_REPORT.json",
+    )
 
     audit_diff_p = sub.add_parser("audit-diff", help="Compare two RUN_AUDIT.json payloads")
     audit_diff_p.add_argument("--before", required=True, help="Earlier output/RUN_AUDIT.json path")
@@ -275,6 +287,18 @@ def main() -> int:
         if args.write:
             report_path = write_run_audit_report(workspace=workspace, report=report)
             json_path = write_run_audit_json(workspace=workspace, payload=payload)
+            print(f"Wrote {report_path}")
+            print(f"Wrote {json_path}")
+        print(report, end="")
+        return exit_code
+
+    if args.cmd == "improve":
+        workspace = Path(args.workspace).resolve()
+        exit_code, payload = build_improvement_payload(workspace=workspace, repo_root=repo_root)
+        report = render_improvement_report(payload)
+        if args.write:
+            report_path = write_improvement_report(workspace=workspace, report=report)
+            json_path = write_improvement_json(workspace=workspace, payload=payload)
             print(f"Wrote {report_path}")
             print(f"Wrote {json_path}")
         print(report, end="")

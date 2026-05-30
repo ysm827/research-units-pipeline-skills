@@ -9,6 +9,7 @@ HARNESS_DOC_ENTRYPOINTS = {
     "docs/HARNESS_SHOWCASE.md": "harness showcase",
     "docs/HARNESS_RUN_WALKTHROUGH.md": "harness run walkthrough",
     "docs/HARNESS_IMPROVEMENT_LOOP.md": "harness improvement loop",
+    "docs/ARTIFACT_INTERFACE_STANDARD.md": "artifact interface standard",
     "docs/PIPELINE_TAXONOMY.md": "pipeline taxonomy",
     "docs/PROJECT_LANGUAGE.md": "project language",
     "docs/HARNESS_ROADMAP.md": "harness roadmap",
@@ -20,6 +21,7 @@ HARNESS_DOC_ENTRYPOINTS = {
     "docs/RUN_AUDIT_SCHEMA.md": "run-audit schema reference",
     "docs/RUN_AUDIT_DIFF_SCHEMA.md": "run-audit diff schema reference",
     "docs/SHOWCASE_AUDIT_SCHEMA.md": "showcase audit schema reference",
+    "docs/IMPROVEMENT_REPORT_SCHEMA.md": "improvement report schema reference",
     "docs/adr/README.md": "ADR index",
     "docs/adr/0001-separate-semantic-skills-from-deterministic-harness.md": "skills-vs-harness ADR",
     "docs/adr/0002-keep-run-audit-as-markdown-plus-json.md": "run-audit sidecar ADR",
@@ -27,6 +29,7 @@ HARNESS_DOC_ENTRYPOINTS = {
     "docs/adr/0004-keep-skill-audit-as-repo-local-json-before-sarif.md": "skill-audit JSON/SARIF ADR",
     "docs/adr/0005-keep-run-audit-diff-as-json-backed-comparison.md": "run-audit diff ADR",
     "docs/adr/0006-keep-showcase-audit-as-repo-local-json-contract.md": "showcase-audit JSON ADR",
+    "docs/adr/0007-keep-improvement-report-as-a-local-repair-map.md": "improvement report ADR",
 }
 
 HARNESS_README_LINKS = (
@@ -37,6 +40,7 @@ HARNESS_README_LINKS = (
     "docs/HARNESS_SHOWCASE.md",
     "docs/HARNESS_RUN_WALKTHROUGH.md",
     "docs/HARNESS_IMPROVEMENT_LOOP.md",
+    "docs/ARTIFACT_INTERFACE_STANDARD.md",
     "docs/PIPELINE_TAXONOMY.md",
     "docs/PROJECT_LANGUAGE.md",
     "docs/HARNESS_ROADMAP.md",
@@ -48,6 +52,7 @@ HARNESS_README_LINKS = (
     "docs/RUN_AUDIT_SCHEMA.md",
     "docs/RUN_AUDIT_DIFF_SCHEMA.md",
     "docs/SHOWCASE_AUDIT_SCHEMA.md",
+    "docs/IMPROVEMENT_REPORT_SCHEMA.md",
     "docs/adr/",
 )
 
@@ -88,6 +93,13 @@ SCHEMA_REFERENCE_DOCS = {
         "validator": "scripts.showcase_audit.validate_showcase_audit_payload",
         "local_check": "python scripts/showcase_audit.py --strict",
         "adr": "docs/adr/0006-keep-showcase-audit-as-repo-local-json-contract.md",
+    },
+    "docs/IMPROVEMENT_REPORT_SCHEMA.md": {
+        "schema": "improvement-report.v1",
+        "json_path": "output/IMPROVEMENT_REPORT.json",
+        "producer": "tooling.harness.build_improvement_payload",
+        "validator": "tooling.harness.validate_improvement_payload",
+        "adr": "docs/adr/0007-keep-improvement-report-as-a-local-repair-map.md",
     },
 }
 
@@ -155,6 +167,51 @@ PATTERN_REGISTER_REQUIRED_ADOPTION_RULES = (
     "If adoption changes a repo-level contract, record the decision as an ADR",
 )
 
+ARTIFACT_INTERFACE_REQUIRED_SECTIONS = (
+    "## Interface Thesis",
+    "## Required Interface Fields",
+    "## Format Selection",
+    "## Current Repo Mappings",
+    "## Repair Protocol",
+    "## Anti-Patterns",
+    "## Extension Rule",
+)
+
+ARTIFACT_INTERFACE_REQUIRED_FIELDS = (
+    "`artifact_path`",
+    "`producer`",
+    "`consumer`",
+    "`format`",
+    "`human_view`",
+    "`machine_view`",
+    "`trace_keys`",
+    "`repair_surface`",
+    "`validation`",
+    "`visibility`",
+)
+
+ARTIFACT_INTERFACE_REQUIRED_FORMATS = (
+    "Markdown",
+    "CSV",
+    "TSV",
+    "YAML",
+    "Versioned JSON",
+    "PDF",
+    "TeX",
+    "SVG",
+)
+
+ARTIFACT_INTERFACE_REQUIRED_MAPPINGS = (
+    "Workflow protocol",
+    "Execution ledger",
+    "Workspace diagnosis",
+    "Run audit",
+    "Audit comparison",
+    "Skill hygiene",
+    "Showcase",
+    "Learning layer",
+)
+
 HARNESS_SKILL_AUDIT_GATE = "python scripts/audit_skills.py --fail-on WARN"
 HARNESS_READINESS_AUDIT_SCRIPT = "scripts/readiness_audit.py"
 HARNESS_SHOWCASE_AUDIT_SCRIPT = "scripts/showcase_audit.py"
@@ -178,6 +235,7 @@ READINESS_REQUIRED_DOCS = (
     "docs/HARNESS_SHOWCASE.md",
     "docs/HARNESS_RUN_WALKTHROUGH.md",
     "docs/HARNESS_IMPROVEMENT_LOOP.md",
+    "docs/ARTIFACT_INTERFACE_STANDARD.md",
     "docs/PIPELINE_TAXONOMY.md",
     "docs/PROJECT_LANGUAGE.md",
     "docs/HARNESS_ROADMAP.md",
@@ -189,6 +247,7 @@ READINESS_REQUIRED_DOCS = (
     "docs/RUN_AUDIT_SCHEMA.md",
     "docs/RUN_AUDIT_DIFF_SCHEMA.md",
     "docs/SHOWCASE_AUDIT_SCHEMA.md",
+    "docs/IMPROVEMENT_REPORT_SCHEMA.md",
     "docs/adr/README.md",
 )
 

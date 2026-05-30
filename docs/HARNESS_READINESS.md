@@ -19,6 +19,7 @@ The repo now has the main pieces of a file-first harness system:
 - deliverable-first showcase in `docs/HARNESS_SHOWCASE.md`
 - command-level run walkthrough in `docs/HARNESS_RUN_WALKTHROUGH.md`
 - bounded self-improvement model in `docs/HARNESS_IMPROVEMENT_LOOP.md`
+- artifact interface standard in `docs/ARTIFACT_INTERFACE_STANDARD.md`
 - pipeline family catalog in `docs/PIPELINE_TAXONOMY.md`
 - canonical language in `docs/PROJECT_LANGUAGE.md`
 - staged upgrade path in `docs/HARNESS_ROADMAP.md`
@@ -32,6 +33,9 @@ The repo now has the main pieces of a file-first harness system:
 - `run-audit.v1` field reference in `docs/RUN_AUDIT_SCHEMA.md`
 - run audit comparison through `python scripts/pipeline.py audit-diff`
 - `run-audit-diff.v1` field reference in `docs/RUN_AUDIT_DIFF_SCHEMA.md`
+- improvement report through `python scripts/pipeline.py improve`
+- `improvement-report.v1` field reference in
+  `docs/IMPROVEMENT_REPORT_SCHEMA.md`
 - fast readiness evidence-surface audit through
   `python scripts/readiness_audit.py`
 - portable showcase audit through `python scripts/showcase_audit.py --strict`
@@ -53,7 +57,8 @@ The repo now has the main pieces of a file-first harness system:
 | Validation is real, not prose-only | `scripts/validate_repo.py`, `scripts/readiness_audit.py`, `tooling/harness_contracts.py`, schema reference metadata checks, readiness-audit metadata checks, `tests/test_harness_validation.py`, shared schema validation helpers in `tooling/harness.py`, and strict validation checks | Substantial | Validation is intentionally narrow and does not judge prose quality |
 | Workspace diagnosis is inspectable | `tooling/harness.py`, `scripts/pipeline.py doctor`, `output/DOCTOR_REPORT.md`, `output/DOCTOR_REPORT.json`, `validate_doctor_payload`, shared schema validation helpers, schema reference metadata checks, `docs/DOCTOR_REPORT_SCHEMA.md`, `docs/HARNESS_RUN_WALKTHROUGH.md`, and doctor tests | Substantial | Doctor report now has a JSON sidecar; automatic repair planning is still deferred |
 | Results are auditable | `pipeline.py audit --write`, `output/RUN_AUDIT.md`, `output/RUN_AUDIT.json`, `validate_run_audit_payload`, `pipeline.py audit-diff`, `RUN_AUDIT_DIFF.md`, `RUN_AUDIT_DIFF.json`, `validate_run_audit_diff_payload`, shared schema validation helpers, schema reference metadata checks, `docs/RUN_AUDIT_SCHEMA.md`, `docs/RUN_AUDIT_DIFF_SCHEMA.md`, and `docs/HARNESS_RUN_WALKTHROUGH.md` | Substantial | Broader trend dashboards are deferred until representative completed workspaces exist |
-| Improvement loop is bounded | `docs/HARNESS_IMPROVEMENT_LOOP.md` maps final-deliverable defects to intermediate artifact diagnosis, local repair surfaces, validation evidence, and public repo memory | Initial architecture in place | Improvement suggestion reports and artifact-pack export are still roadmap work |
+| Improvement loop is bounded | `docs/HARNESS_IMPROVEMENT_LOOP.md` maps final-deliverable defects to intermediate artifact diagnosis, local repair surfaces, validation evidence, and public repo memory; `pipeline.py improve --write` creates `IMPROVEMENT_REPORT.md/json`; `docs/IMPROVEMENT_REPORT_SCHEMA.md` documents `improvement-report.v1` | Substantial | Current report maps harness evidence to repair surfaces; semantic final-deliverable critique and artifact-pack export remain roadmap work |
+| Intermediate artifacts have a declared interface | `docs/ARTIFACT_INTERFACE_STANDARD.md` defines artifact path, producer, consumer, format, human view, machine view, trace keys, repair surface, validation, and visibility; `scripts/validate_repo.py` checks the standard's required sections, fields, formats, and current repo mappings | Substantial and validation-backed | Future new artifact families still need local validation when drift becomes concrete |
 | External patterns are adopted selectively | Architecture, roadmap, taxonomy, language, `docs/PATTERN_REGISTER.md`, ADR docs, and pattern-register contract validation map external patterns to repo mechanisms | Substantial and validation-backed | Avoid importing large runtime stacks before file-first pain justifies them |
 | Existing workflows remain usable | Strict validation, smoke tests, doctor/audit tests, WARN-level skill audit checks, showcase audit checks, tracked `research-brief` and `source-tutorial` showcase fixtures, `scripts/showcase_audit.py`, `docs/SHOWCASE_AUDIT_SCHEMA.md`, and a local completed `source-tutorial` workspace exhibit when available | Partially proven | Full end-to-end runs are not part of the lightweight readiness gate |
 | Skill audit signal is actionable | `scripts/audit_skills.py` distinguishes diagnostic/example ellipsis from likely generated-artifact leakage, emits fine-grained `review_category` values plus `next_action`, supports review-category filtering/limits/summary-only output, documents `skill-audit-report.v1` in `docs/SKILL_AUDIT_SCHEMA.md`, and is checked locally with `python scripts/audit_skills.py --fail-on WARN` | Improved and locally checkable | INFO-level findings remain review signals rather than blockers |
@@ -99,11 +104,13 @@ current worktree:
    `docs/HARNESS_SYSTEM_MAP.md`, `docs/HARNESS_SHOWCASE.md`,
    `docs/PIPELINE_TAXONOMY.md`, `docs/PROJECT_LANGUAGE.md`,
    `docs/HARNESS_RUN_WALKTHROUGH.md`, `docs/HARNESS_IMPROVEMENT_LOOP.md`,
+   `docs/ARTIFACT_INTERFACE_STANDARD.md`,
    `docs/HARNESS_ROADMAP.md`, `docs/HARNESS_READINESS.md`,
    `docs/HARNESS_READINESS_AUDIT.md`, `docs/PATTERN_REGISTER.md`,
    `docs/SKILL_AUDIT_SCHEMA.md`, `docs/DOCTOR_REPORT_SCHEMA.md`,
    `docs/RUN_AUDIT_SCHEMA.md`, `docs/RUN_AUDIT_DIFF_SCHEMA.md`,
-   `docs/SHOWCASE_AUDIT_SCHEMA.md`, and `docs/adr/`.
+   `docs/SHOWCASE_AUDIT_SCHEMA.md`, `docs/IMPROVEMENT_REPORT_SCHEMA.md`,
+   and `docs/adr/`.
 5. Run strict repo validation.
 6. Run focused harness tests.
 7. Run the WARN-level blocking skill audit:
@@ -124,9 +131,11 @@ current worktree:
     audit JSON output.
 15. Inspect `docs/SHOWCASE_AUDIT_SCHEMA.md` if exhibit consumers depend on
     showcase audit JSON output.
-16. Confirm generated local files such as `uv.lock` are not left behind unless
+16. Inspect `docs/IMPROVEMENT_REPORT_SCHEMA.md` if repair-map consumers depend
+    on improvement report JSON output.
+17. Confirm generated local files such as `uv.lock` are not left behind unless
     intentionally tracked.
-17. Check that remaining roadmap items are explicitly deferred rather than
+18. Check that remaining roadmap items are explicitly deferred rather than
     silently missing.
 
 Only after that audit should completion be considered. Passing this readiness

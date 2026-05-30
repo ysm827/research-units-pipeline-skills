@@ -11,7 +11,9 @@ This operating model explains why those pieces belong together.
 For the more formal research-program framing, read
 `docs/AUTO_RESEARCH_HARNESS.md`. For a deliverable-first exhibit, read
 `docs/HARNESS_SHOWCASE.md`. For the self-improvement control model, read
-`docs/HARNESS_IMPROVEMENT_LOOP.md`.
+`docs/HARNESS_IMPROVEMENT_LOOP.md`. For the interface standard that governs
+intermediate reports, tables, and sidecars, read
+`docs/ARTIFACT_INTERFACE_STANDARD.md`.
 
 ## System Thesis
 
@@ -85,7 +87,8 @@ Two artifact forms should normally coexist:
 
 Use `docs/HARNESS_IMPROVEMENT_LOOP.md` as the detailed design reference before
 adding new self-loop behavior, artifact-pack output, or autonomous research
-policy.
+policy. Use `docs/ARTIFACT_INTERFACE_STANDARD.md` when deciding the artifact
+path, producer, consumer, format, trace keys, repair surface, and validation.
 
 ## Flow Model
 
@@ -102,10 +105,12 @@ The golden path is:
 6. Skills perform semantic work and write artifacts into the execution ledger.
 7. Quality gates, doctor reports, run audits, manifests, and audit diffs expose
    whether the run can continue or needs repair.
-8. Final-deliverable defects are attributed to intermediate artifacts,
+8. `pipeline.py improve` can convert doctor/run-audit evidence into a local
+   repair map.
+9. Final-deliverable defects are attributed to intermediate artifacts,
    workflow protocol gaps, skill contracts, model-capability limits, or
    harness fallback gaps.
-9. Recurring lessons become project language, ADRs, pattern-register entries,
+10. Recurring lessons become project language, ADRs, pattern-register entries,
    validation rules, pipeline edits, or skill improvements.
 
 The current CLI commands are implementation adapters for this flow. They should
@@ -128,6 +133,8 @@ These constraints should guide future changes:
    they become project language.
 9. Self-improvement claims require evidence: a before/after audit, test,
    validation rule, ADR, or durable artifact diff.
+10. Durable intermediate artifacts should expose a declared interface before
+    another tool, workflow, or future agent depends on them.
 
 ## Naming Guidelines
 
@@ -141,6 +148,7 @@ Use these names when explaining the architecture:
 | Execution ledger | A workspace as durable run state | "Workspace folder" as the full meaning |
 | Evidence loop | Doctor, audit, audit diff, quality gate, manifests | Tool names as the architecture headline |
 | Learning layer | ADRs, glossary, pattern register, roadmap, validation | "Docs" as passive documentation |
+| Artifact interface | Producer, consumer, format, trace keys, repair surface, validation | Treating intermediate files as incidental outputs |
 
 These names do not require immediate file renames. They are conceptual names
 for the story and future docs.
@@ -159,6 +167,9 @@ This model is grounded in current repo facts:
   dashboard.
 - The project already has validation, tests, local harness checks, ADRs, schema
   docs, a pattern register, and readiness evidence.
+- Intermediate artifacts now have a repo-level interface standard for deciding
+  when a Markdown report, CSV/TSV table, YAML protocol, or JSON sidecar is the
+  right shape.
 - The project has enough evidence surfaces to support bounded
   self-improvement, but not yet enough completed-run corpus to justify a full
   autonomous policy loop or benchmark dashboard.

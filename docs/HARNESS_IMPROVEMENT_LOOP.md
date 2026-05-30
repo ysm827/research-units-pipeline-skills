@@ -8,7 +8,19 @@ change before the next run.
 The current repository already has the necessary substrate: workflow
 protocols, execution ledgers, human checkpoints, doctor reports, run audits,
 audit diffs, schema references, ADRs, a pattern register, and a roadmap. The
-improvement loop gives those pieces a stricter control model.
+improvement loop gives those pieces a stricter control model. The normative
+interface standard for intermediate artifacts lives in
+`docs/ARTIFACT_INTERFACE_STANDARD.md`.
+
+The first executable surface for this loop is:
+
+```bash
+python scripts/pipeline.py improve --workspace workspaces/<name> --write
+```
+
+It writes `output/IMPROVEMENT_REPORT.md` and
+`output/IMPROVEMENT_REPORT.json`, mapping doctor/run-audit evidence to an
+upstream interface, repair surface, and validation command.
 
 ## Core Thesis
 
@@ -74,6 +86,11 @@ Design rule: if an artifact is used by a person, give it a compact report. If
 it is used by a tool or future agent, give it a simple structured surface:
 CSV, TSV, YAML, or versioned JSON. Do not force tools to scrape prose unless
 there is no stable consumer yet.
+
+For new durable artifact families, apply
+`docs/ARTIFACT_INTERFACE_STANDARD.md`: declare the artifact path, producer,
+consumer, format, human view, machine view, trace keys, repair surface,
+validation, and visibility before making downstream tools rely on it.
 
 ## Defect Attribution Matrix
 
@@ -155,8 +172,9 @@ surfaces instead of inventing a separate product:
    machine-readable sidecars, and decisions into a portable review package.
 2. Run scorecard: summarize one workspace by deliverable coverage, evidence
    depth, unresolved issues, and human checkpoints.
-3. Improvement suggestion report: map final-deliverable defects to likely
-   skill, pipeline, artifact, or validator repairs.
+3. Improvement suggestion report: current first version maps doctor/run-audit
+   evidence to likely skill, pipeline, artifact, schema, validator, ADR, or
+   glossary repairs.
 4. Natural-language checkpoint command: translate "approve outline but rerun
    evidence extraction" into `DECISIONS.md` plus unit status changes.
 5. Skill card index: expose each high-frequency skill as purpose, input,

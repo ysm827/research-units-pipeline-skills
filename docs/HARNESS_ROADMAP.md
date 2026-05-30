@@ -6,7 +6,8 @@ skills, pipeline contracts, unit templates, workspaces, manifests, doctor
 reports, validation scripts, tests, README files, and ADRs.
 The conceptual source for the current story is
 `docs/AUTO_RESEARCH_HARNESS.md`, `docs/HARNESS_OPERATING_MODEL.md`, and
-`docs/HARNESS_IMPROVEMENT_LOOP.md`.
+`docs/HARNESS_IMPROVEMENT_LOOP.md`. The interface standard for durable
+intermediate artifacts is `docs/ARTIFACT_INTERFACE_STANDARD.md`.
 
 ## Roadmap Principles
 
@@ -70,13 +71,16 @@ Tracked artifacts:
 - `docs/HARNESS_OPERATING_MODEL.md`
 - `docs/HARNESS_SHOWCASE.md`
 - `docs/HARNESS_IMPROVEMENT_LOOP.md`
+- `docs/ARTIFACT_INTERFACE_STANDARD.md`
 - `docs/PIPELINE_TAXONOMY.md`
 - `docs/PROJECT_LANGUAGE.md`
 - `docs/HARNESS_ROADMAP.md`
 - `docs/HARNESS_READINESS.md`
 - `docs/HARNESS_READINESS_AUDIT.md`
 - `docs/SHOWCASE_AUDIT_SCHEMA.md`
+- `docs/IMPROVEMENT_REPORT_SCHEMA.md`
 - `docs/adr/0001-separate-semantic-skills-from-deterministic-harness.md`
+- `docs/adr/0007-keep-improvement-report-as-a-local-repair-map.md`
 - ADR index drift validation in `scripts/validate_repo.py`
 - README project reference links
 - `scripts/validate_repo.py` docs-entrypoint checks
@@ -95,6 +99,9 @@ Acceptance:
   through protocol, artifacts, and evidence.
 - New contributors can understand how final-deliverable defects should repair
   intermediate artifacts, skills, workflow protocols, validators, or ADRs.
+- New contributors can distinguish a human-readable report, machine-readable
+  table, YAML protocol, JSON sidecar, and final deliverable before adding a new
+  artifact family.
 - New contributors can run `scripts/showcase_audit.py --strict` to confirm
   that the tracked examples contain real deliverables, evidence reports,
   protocol links, and the visual lineage asset.
@@ -105,6 +112,9 @@ Acceptance:
 - Strict repo validation warns when the external pattern register loses its
   required sections, adopted/partial/deferred status vocabulary, reference
   codebase table, or adoption rules.
+- Strict repo validation warns when the artifact interface standard loses its
+  required sections, interface fields, format vocabulary, or current repo
+  mapping rows.
 - Strict repo validation warns when an ADR file is missing from
   `docs/adr/README.md`, or when the index links a missing ADR file.
 - Strict repo validation also checks each ADR's minimal format contract:
@@ -270,16 +280,21 @@ Acceptance:
 
 ### M6: Improvement Loop And Product Surfaces
 
-Status: proposed.
+Status: in progress.
 
 Goal: make the self-improvement story operational without pretending the repo
 is already a fully autonomous agent runtime.
 
 Candidate changes:
 
-- Add a run-level improvement suggestion report that maps final-deliverable
-  defects to likely intermediate artifact, skill, pipeline, schema, validator,
-  or ADR repairs.
+- Keep `docs/ARTIFACT_INTERFACE_STANDARD.md` as the shared artifact-shape
+  contract before introducing artifact packs, scorecards, or new sidecars.
+- Keep `pipeline.py improve --write` as the first run-level improvement report,
+  mapping doctor/run-audit evidence to likely intermediate artifact, skill,
+  pipeline, schema, validator, ADR, glossary, or validation repairs.
+- Keep `docs/IMPROVEMENT_REPORT_SCHEMA.md` aligned with
+  `improvement-report.v1` so future tools can consume the report without
+  scraping Markdown.
 - Add artifact pack export so a reader can inspect the final deliverable,
   intermediate reports, structured sidecars, decisions, and lineage together.
 - Add a run scorecard for B-side or lab settings: deliverable coverage,
@@ -298,6 +313,8 @@ Acceptance:
   schema, validator, ADR, or project language.
 - Human-readable reports and machine-readable sidecars stay paired when both
   people and tools consume the artifact.
+- New artifact families declare producer, consumer, trace keys, repair
+  surface, visibility, and validation before downstream reliance.
 - Product-facing examples remain deliverable-first and auditable through
   `showcase_audit.py`.
 - No autonomous policy loop is added before representative completed

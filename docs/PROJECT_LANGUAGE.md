@@ -156,6 +156,25 @@ A file or directory produced or consumed by a unit or stage.
 Use `artifact` for durable files that later work can inspect. Avoid using it
 for transient chat context.
 
+### Artifact interface
+
+The declared contract around a durable artifact: path, producer, consumer,
+format, human-readable view, machine-readable view, trace keys, repair surface,
+validation, and visibility.
+
+Use artifact interface when an intermediate artifact is expected to support
+handoff, tool consumption, audit, comparison, or future repair. Do not use it
+for temporary scratch content that no later person or tool consumes.
+
+### Artifact interface standard
+
+The repo-level standard in `docs/ARTIFACT_INTERFACE_STANDARD.md`.
+
+Use the standard before adding a new report, table, sidecar, artifact pack, or
+structured output family. It is the bridge between the improvement loop and
+concrete file formats: Markdown for people, CSV/TSV/YAML/JSON for tools, and
+paired surfaces when both readers matter.
+
 ### Artifact contract
 
 The declared set of required artifacts for a pipeline, stage, or unit.
@@ -250,6 +269,27 @@ The `doctor-report.v1` field contract in `docs/DOCTOR_REPORT_SCHEMA.md`.
 Use this schema reference when writing tools that consume
 `output/DOCTOR_REPORT.json`. Use `validate_doctor_payload` to check payload
 compatibility before relying on the fields.
+
+### Improvement report
+
+The workspace repair-map command:
+`python scripts/pipeline.py improve --workspace workspaces/<name> --write`.
+
+Use improvement report for the harness artifact that maps doctor/run-audit
+evidence to an upstream interface, repair surface, recommended action, and
+validation command. Do not describe it as an autonomous repair planner.
+
+The human-readable report is `output/IMPROVEMENT_REPORT.md`; the
+machine-readable sidecar is `output/IMPROVEMENT_REPORT.json`.
+
+### Improvement report schema
+
+The `improvement-report.v1` field contract in
+`docs/IMPROVEMENT_REPORT_SCHEMA.md`.
+
+Use this schema reference when writing tools that consume
+`output/IMPROVEMENT_REPORT.json`. Use `validate_improvement_payload` to check
+payload compatibility before relying on the fields.
 
 ### Remediation category
 

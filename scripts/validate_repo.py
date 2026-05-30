@@ -24,6 +24,10 @@ from tooling.harness_contracts import (
     ADR_ALLOWED_STATUSES,
     ADR_REQUIRED_METADATA,
     ADR_REQUIRED_SECTIONS,
+    ARTIFACT_INTERFACE_REQUIRED_FIELDS,
+    ARTIFACT_INTERFACE_REQUIRED_FORMATS,
+    ARTIFACT_INTERFACE_REQUIRED_MAPPINGS,
+    ARTIFACT_INTERFACE_REQUIRED_SECTIONS,
     HARNESS_LOCAL_CHECKS,
     HARNESS_DOC_ENTRYPOINTS,
     HARNESS_READINESS_AUDIT_SCRIPT,
@@ -442,11 +446,13 @@ def _validate_harness_docs(*, repo_root: Path, docs_dir: Path) -> list[Finding]:
                 "docs/HARNESS_SHOWCASE.md",
                 "docs/HARNESS_RUN_WALKTHROUGH.md",
                 "docs/HARNESS_IMPROVEMENT_LOOP.md",
+                "docs/ARTIFACT_INTERFACE_STANDARD.md",
                 "docs/SKILL_AUDIT_SCHEMA.md",
                 "docs/DOCTOR_REPORT_SCHEMA.md",
                 "docs/RUN_AUDIT_SCHEMA.md",
                 "docs/RUN_AUDIT_DIFF_SCHEMA.md",
                 "docs/SHOWCASE_AUDIT_SCHEMA.md",
+                "docs/IMPROVEMENT_REPORT_SCHEMA.md",
             )
             if link not in text
         ]
@@ -471,6 +477,7 @@ def _validate_harness_docs(*, repo_root: Path, docs_dir: Path) -> list[Finding]:
     findings.extend(_validate_adr_contracts(repo_root=repo_root, docs_dir=docs_dir))
     findings.extend(_validate_schema_reference_docs(repo_root=repo_root))
     findings.extend(_validate_auto_research_harness_doc(repo_root=repo_root))
+    findings.extend(_validate_artifact_interface_standard(repo_root=repo_root))
     findings.extend(_validate_harness_showcase(repo_root=repo_root))
     findings.extend(_validate_pattern_register(repo_root=repo_root))
     findings.extend(_validate_local_harness_checks(repo_root=repo_root))
@@ -497,6 +504,38 @@ def _validate_auto_research_harness_doc(*, repo_root: Path) -> list[Finding]:
             )
         ]
     return []
+
+
+def _validate_artifact_interface_standard(*, repo_root: Path) -> list[Finding]:
+    rel_path = "docs/ARTIFACT_INTERFACE_STANDARD.md"
+    doc_path = repo_root / rel_path
+    if not doc_path.exists():
+        return []
+
+    text = doc_path.read_text(encoding="utf-8", errors="ignore")
+    required_groups = {
+        "sections": ARTIFACT_INTERFACE_REQUIRED_SECTIONS,
+        "interface fields": ARTIFACT_INTERFACE_REQUIRED_FIELDS,
+        "format vocabulary": ARTIFACT_INTERFACE_REQUIRED_FORMATS,
+        "current repo mappings": ARTIFACT_INTERFACE_REQUIRED_MAPPINGS,
+    }
+    missing: list[str] = []
+    for label, needles in required_groups.items():
+        missing_bits = [needle for needle in needles if needle not in text]
+        if missing_bits:
+            missing.append(f"{label} {', '.join(f'`{bit}`' for bit in missing_bits)}")
+
+    if not missing:
+        return []
+
+    return [
+        Finding(
+            "WARN",
+            f"`{rel_path}` is missing artifact-interface contract metadata: "
+            + "; ".join(missing)
+            + ".",
+        )
+    ]
 
 
 def _validate_harness_showcase(*, repo_root: Path) -> list[Finding]:

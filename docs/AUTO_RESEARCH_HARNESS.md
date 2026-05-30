@@ -66,7 +66,9 @@ decisions, outputs, reports, logs, and manifests.
 
 The important design move is that state is not assumed to live inside the
 conversation. It is externalized into files that future agents, scripts, and
-humans can inspect.
+humans can inspect. `docs/ARTIFACT_INTERFACE_STANDARD.md` makes that design
+explicit by requiring durable artifacts to declare their producer, consumer,
+format, trace keys, repair surface, validation, and visibility.
 
 ### 3. Evidence-mediated improvement
 
@@ -116,7 +118,7 @@ future execution.
 | Workflow Protocol | A constrained method for producing a class of deliverables | `pipelines/*.pipeline.md`, `templates/UNITS.*.csv`, `docs/PIPELINE_TAXONOMY.md` |
 | Execution Ledger | Durable record of one run | `workspaces/<name>/`, `PIPELINE.lock.md`, `UNITS.csv`, `STATUS.md`, `CHECKPOINTS.md`, `DECISIONS.md`, `output/*` |
 | Evidence Loop | Diagnosis, audit, comparison, and quality checks | `pipeline.py doctor`, `pipeline.py audit`, `pipeline.py audit-diff`, quality gates, manifests, schema sidecars |
-| Improvement Loop | Defect attribution and bounded repair | `docs/HARNESS_IMPROVEMENT_LOOP.md`, audit diffs, schema docs, validation tests, skill and pipeline edits |
+| Improvement Loop | Defect attribution and bounded repair | `docs/HARNESS_IMPROVEMENT_LOOP.md`, `docs/ARTIFACT_INTERFACE_STANDARD.md`, audit diffs, schema docs, validation tests, skill and pipeline edits |
 | Learning Layer | Project-level memory and governance | `docs/PROJECT_LANGUAGE.md`, `docs/adr/`, `docs/PATTERN_REGISTER.md`, `docs/HARNESS_ROADMAP.md`, validation tests |
 
 The abstract layer is stable language for readers and future architecture
@@ -156,6 +158,7 @@ which a model performs research work:
 - it blocks premature completion through artifact contracts
 - it exposes failures through doctor and audit reports
 - it compares run evidence through audit diffs
+- it maps run evidence to local repair surfaces through improvement reports
 - it attributes final-deliverable defects to upstream artifact or contract
   problems
 - it turns repeated failures into reusable assets

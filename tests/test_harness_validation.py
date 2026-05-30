@@ -23,10 +23,10 @@ def _write_minimal_harness_docs(repo_root: Path) -> None:
         "docs/HARNESS_ROADMAP.md, docs/HARNESS_READINESS.md, "
         "docs/HARNESS_READINESS_AUDIT.md, docs/PATTERN_REGISTER.md, "
         "docs/HARNESS_SYSTEM_MAP.md, docs/HARNESS_SHOWCASE.md, docs/HARNESS_RUN_WALKTHROUGH.md, "
-        "docs/HARNESS_IMPROVEMENT_LOOP.md, "
+        "docs/HARNESS_IMPROVEMENT_LOOP.md, docs/ARTIFACT_INTERFACE_STANDARD.md, "
         "docs/SKILL_AUDIT_SCHEMA.md, docs/DOCTOR_REPORT_SCHEMA.md, "
         "docs/RUN_AUDIT_SCHEMA.md, docs/RUN_AUDIT_DIFF_SCHEMA.md, "
-        "and docs/SHOWCASE_AUDIT_SCHEMA.md.\n",
+        "docs/SHOWCASE_AUDIT_SCHEMA.md, and docs/IMPROVEMENT_REPORT_SCHEMA.md.\n",
         encoding="utf-8",
     )
     (docs_dir / "HARNESS_OPERATING_MODEL.md").write_text("# Harness Operating Model\n", encoding="utf-8")
@@ -34,6 +34,20 @@ def _write_minimal_harness_docs(repo_root: Path) -> None:
     (docs_dir / "HARNESS_SHOWCASE.md").write_text("# Harness Showcase\n", encoding="utf-8")
     (docs_dir / "HARNESS_RUN_WALKTHROUGH.md").write_text("# Harness Run Walkthrough\n", encoding="utf-8")
     (docs_dir / "HARNESS_IMPROVEMENT_LOOP.md").write_text("# Harness Improvement Loop\n", encoding="utf-8")
+    (docs_dir / "ARTIFACT_INTERFACE_STANDARD.md").write_text(
+        "\n".join(
+            [
+                "# Artifact Interface Standard",
+                "",
+                *validate_repo.ARTIFACT_INTERFACE_REQUIRED_SECTIONS,
+                *validate_repo.ARTIFACT_INTERFACE_REQUIRED_FIELDS,
+                *validate_repo.ARTIFACT_INTERFACE_REQUIRED_FORMATS,
+                *validate_repo.ARTIFACT_INTERFACE_REQUIRED_MAPPINGS,
+                "",
+            ]
+        ),
+        encoding="utf-8",
+    )
     (docs_dir / "AUTO_RESEARCH_HARNESS.md").write_text(
         "\n".join(validate_repo.AUTO_RESEARCH_REQUIRED_TERMS) + "\n",
         encoding="utf-8",
@@ -92,6 +106,10 @@ def _write_minimal_harness_docs(repo_root: Path) -> None:
     )
     (docs_dir / "SHOWCASE_AUDIT_SCHEMA.md").write_text(
         "\n".join(validate_repo.SCHEMA_REFERENCE_DOCS["docs/SHOWCASE_AUDIT_SCHEMA.md"].values()) + "\n",
+        encoding="utf-8",
+    )
+    (docs_dir / "IMPROVEMENT_REPORT_SCHEMA.md").write_text(
+        "\n".join(validate_repo.SCHEMA_REFERENCE_DOCS["docs/IMPROVEMENT_REPORT_SCHEMA.md"].values()) + "\n",
         encoding="utf-8",
     )
     adr_files = [
@@ -319,13 +337,13 @@ def test_harness_docs_validation_reports_missing_readme_links(tmp_path: Path) ->
             "`README.md` is missing harness docs links: "
             "docs/AUTO_RESEARCH_HARNESS.md, docs/HARNESS_OPERATING_MODEL.md, "
             "docs/HARNESS_SYSTEM_MAP.md, docs/HARNESS_SHOWCASE.md, docs/HARNESS_RUN_WALKTHROUGH.md, "
-            "docs/HARNESS_IMPROVEMENT_LOOP.md, "
+            "docs/HARNESS_IMPROVEMENT_LOOP.md, docs/ARTIFACT_INTERFACE_STANDARD.md, "
             "docs/PIPELINE_TAXONOMY.md, docs/PROJECT_LANGUAGE.md, "
             "docs/HARNESS_ROADMAP.md, docs/HARNESS_READINESS.md, "
             "docs/HARNESS_READINESS_AUDIT.md, docs/PATTERN_REGISTER.md, "
             "docs/SKILL_AUDIT_SCHEMA.md, docs/DOCTOR_REPORT_SCHEMA.md, "
             "docs/RUN_AUDIT_SCHEMA.md, docs/RUN_AUDIT_DIFF_SCHEMA.md, "
-            "docs/SHOWCASE_AUDIT_SCHEMA.md, docs/adr/.",
+            "docs/SHOWCASE_AUDIT_SCHEMA.md, docs/IMPROVEMENT_REPORT_SCHEMA.md, docs/adr/.",
         )
     ]
 
@@ -367,6 +385,32 @@ def test_harness_docs_validation_reports_missing_readiness_audit_metadata(tmp_pa
             "`docs/HARNESS_READINESS_AUDIT.md` is missing readiness audit metadata: "
             "`harness-readiness-audit.v1`, `python scripts/readiness_audit.py`, "
             "`docs/HARNESS_READINESS.md`.",
+        )
+    ]
+
+
+def test_harness_docs_validation_reports_missing_artifact_interface_metadata(tmp_path: Path) -> None:
+    _write_minimal_harness_docs(tmp_path)
+    (tmp_path / "README.md").write_text(_readme_with_harness_links(), encoding="utf-8")
+    (tmp_path / "README.zh-CN.md").write_text(_readme_with_harness_links(), encoding="utf-8")
+    (tmp_path / "docs" / "ARTIFACT_INTERFACE_STANDARD.md").write_text(
+        "# Artifact Interface Standard\n\n## Interface Thesis\n\n`artifact_path`\n",
+        encoding="utf-8",
+    )
+
+    findings = validate_repo._validate_harness_docs(repo_root=tmp_path, docs_dir=tmp_path / "docs")
+
+    assert [(item.level, item.message) for item in findings] == [
+        (
+            "WARN",
+            "`docs/ARTIFACT_INTERFACE_STANDARD.md` is missing artifact-interface contract metadata: "
+            "sections `## Required Interface Fields`, `## Format Selection`, `## Current Repo Mappings`, "
+            "`## Repair Protocol`, `## Anti-Patterns`, `## Extension Rule`; "
+            "interface fields ``producer``, ``consumer``, ``format``, ``human_view``, "
+            "``machine_view``, ``trace_keys``, ``repair_surface``, ``validation``, ``visibility``; "
+            "format vocabulary `Markdown`, `CSV`, `TSV`, `YAML`, `Versioned JSON`, `PDF`, `TeX`, `SVG`; "
+            "current repo mappings `Workflow protocol`, `Execution ledger`, `Workspace diagnosis`, "
+            "`Run audit`, `Audit comparison`, `Skill hygiene`, `Showcase`, `Learning layer`.",
         )
     ]
 
