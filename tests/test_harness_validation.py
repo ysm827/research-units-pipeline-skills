@@ -810,6 +810,25 @@ def test_showcase_audit_reports_artifact_pack_excerpt_markdown_tsv_drift(tmp_pat
     assert "target_artifact\\toutput/SNAPSHOT.md\\ttrue\\tfinal deliverable" in finding["evidence"]
 
 
+def test_showcase_audit_reports_absolute_local_paths_in_fixture(tmp_path: Path) -> None:
+    _write_minimal_showcase_audit_repo(tmp_path)
+    snapshot = tmp_path / showcase_audit.RESEARCH_BRIEF_ROOT / "output" / "SNAPSHOT.md"
+    snapshot.write_text(
+        "# Snapshot: RAG Evaluation\n\n"
+        "Harness Implication\n\n"
+        "Source file: /Users/alice/research-units-pipeline-skills/workspaces/demo/output/SNAPSHOT.md\n",
+        encoding="utf-8",
+    )
+
+    payload = showcase_audit.build_showcase_audit(repo_root=tmp_path)
+
+    assert payload["verdict"] == "ATTENTION"
+    finding = next(item for item in payload["checks"] if item["id"] == "research_brief_fixture")
+    assert finding["status"] == "WARN"
+    assert "contains absolute local path(s)" in finding["evidence"]
+    assert "/Users/alice/research-units-pipeline-skills/workspaces/demo/output/SNAPSHOT.md" in finding["evidence"]
+
+
 def test_showcase_audit_payload_validation_reports_shape_errors() -> None:
     issues = showcase_audit.validate_showcase_audit_payload(
         {

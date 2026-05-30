@@ -119,6 +119,11 @@ Before committing fixture changes, check:
 - binary evidence is summarized unless the binary is intentionally tracked.
 - the fixture remains small enough for review.
 
+`python scripts/showcase_audit.py --strict` checks tracked fixture files for
+absolute local paths. Treat a failure there as a portability problem: rewrite
+the evidence to use repo-relative paths, workspace-relative paths, or compact
+summaries before committing.
+
 ## Relation To Other Contracts
 
 Use this guide with these docs:

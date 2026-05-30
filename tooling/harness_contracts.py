@@ -261,6 +261,7 @@ SHOWCASE_FIXTURE_REFRESH_REQUIRED_TERMS = (
     'python scripts/pipeline.py pack --workspace "$WS" --write --write-excerpt',
     "ARTIFACT_PACK_EXCERPT.md",
     "ARTIFACT_PACK_EXCERPT.tsv",
+    "absolute local paths",
     "docs/HARNESS_SHOWCASE.md",
     "docs/ARTIFACT_PACK_SCHEMA.md",
     "docs/SHOWCASE_AUDIT_SCHEMA.md",

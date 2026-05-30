@@ -20,6 +20,13 @@ SCHEMA = "harness-showcase-audit.v1"
 SHOWCASE_DOC = "docs/HARNESS_SHOWCASE.md"
 ARTIFACT_PACK_EXCERPT_TSV_HEADER = ("category", "path", "exists", "role")
 ARTIFACT_PACK_EXCERPT_TSV_HEADER_LINE = "\t".join(ARTIFACT_PACK_EXCERPT_TSV_HEADER)
+ABSOLUTE_LOCAL_PATH_PATTERNS = (
+    re.compile(r"/Users/[^\s`)>,|]+"),
+    re.compile(r"/home/[^\s`)>,|]+"),
+    re.compile(r"/tmp/[^\s`)>,|]+"),
+    re.compile(r"[A-Za-z]:\\Users\\[^\s`)>,|]+"),
+    re.compile(r"file://[^\s`)>,|]+"),
+)
 PIPELINE_PROTOCOLS = (
     "pipelines/research-brief.pipeline.md",
     "pipelines/source-tutorial.pipeline.md",
@@ -310,8 +317,10 @@ def _check_fixture_group(*, repo_root: Path, group: dict[str, object]) -> Showca
             issues.append(f"`{root}/{rel_path}` missing {', '.join(missing_terms)}")
 
     for rel_path in expected_paths:
+        full_path = repo_root / rel_path
+        if full_path.exists():
+            issues.extend(_fixture_portability_issues(full_path=full_path, rel_path=rel_path))
         if rel_path.endswith("ARTIFACT_PACK_EXCERPT.tsv"):
-            full_path = repo_root / rel_path
             if full_path.exists():
                 issues.extend(_artifact_pack_excerpt_tsv_issues(full_path=full_path, rel_path=rel_path))
 
@@ -369,6 +378,19 @@ def _score_fixture_group(*, repo_root: Path, group: dict[str, object]) -> Showca
 
 def _has_placeholder_text(text: str) -> bool:
     return bool(re.search(r"\bplaceholder\b|\bTBD\b|\blorem ipsum\b", text, flags=re.IGNORECASE))
+
+
+def _fixture_portability_issues(*, full_path: Path, rel_path: str) -> list[str]:
+    issues: list[str] = []
+    for line_no, line in enumerate(_read_text(full_path).splitlines(), start=1):
+        matches: list[str] = []
+        for pattern in ABSOLUTE_LOCAL_PATH_PATTERNS:
+            matches.extend(match.group(0) for match in pattern.finditer(line))
+        if matches:
+            sample = ", ".join(f"`{match}`" for match in matches[:3])
+            suffix = " ..." if len(matches) > 3 else ""
+            issues.append(f"`{rel_path}` line {line_no} contains absolute local path(s): {sample}{suffix}")
+    return issues
 
 
 def _artifact_pack_excerpt_tsv_issues(*, full_path: Path, rel_path: str) -> list[str]:

@@ -564,7 +564,9 @@ workspace into a tracked showcase fixture.
 Use `docs/SHOWCASE_FIXTURE_REFRESH.md` when refreshing `example/` from
 `workspaces/<name>/`. The refresh should regenerate doctor, run-audit,
 improvement-report, and artifact-pack evidence first, then curate only
-portable excerpts and summaries.
+portable excerpts and summaries. The showcase audit checks tracked showcase
+fixture files for absolute local paths so refreshed fixtures do not depend on
+a maintainer's private filesystem.
 
 ### Showcase audit
 
