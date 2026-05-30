@@ -556,6 +556,16 @@ readers.
 Use showcase fixture for curated examples that are portable across clones. Do
 not use it as a synonym for a live workspace under `workspaces/<name>/`.
 
+### Showcase fixture refresh
+
+The bounded process for promoting selected evidence from a completed local
+workspace into a tracked showcase fixture.
+
+Use `docs/SHOWCASE_FIXTURE_REFRESH.md` when refreshing `example/` from
+`workspaces/<name>/`. The refresh should regenerate doctor, run-audit,
+improvement-report, and artifact-pack evidence first, then curate only
+portable excerpts and summaries.
+
 ### Showcase audit
 
 The repo-level exhibit check:

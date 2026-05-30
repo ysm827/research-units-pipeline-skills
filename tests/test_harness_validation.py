@@ -22,7 +22,8 @@ def _write_minimal_harness_docs(repo_root: Path) -> None:
         "docs/PIPELINE_TAXONOMY.md, docs/PROJECT_LANGUAGE.md, "
         "docs/HARNESS_ROADMAP.md, docs/HARNESS_READINESS.md, "
         "docs/HARNESS_READINESS_AUDIT.md, docs/PATTERN_REGISTER.md, "
-        "docs/HARNESS_SYSTEM_MAP.md, docs/HARNESS_SHOWCASE.md, docs/HARNESS_RUN_WALKTHROUGH.md, "
+        "docs/HARNESS_SYSTEM_MAP.md, docs/HARNESS_SHOWCASE.md, "
+        "docs/SHOWCASE_FIXTURE_REFRESH.md, docs/HARNESS_RUN_WALKTHROUGH.md, "
         "docs/HARNESS_IMPROVEMENT_LOOP.md, docs/ARTIFACT_INTERFACE_STANDARD.md, "
         "docs/SKILL_AUDIT_SCHEMA.md, docs/DOCTOR_REPORT_SCHEMA.md, "
         "docs/RUN_AUDIT_SCHEMA.md, docs/RUN_AUDIT_DIFF_SCHEMA.md, "
@@ -33,6 +34,12 @@ def _write_minimal_harness_docs(repo_root: Path) -> None:
     (docs_dir / "HARNESS_OPERATING_MODEL.md").write_text("# Harness Operating Model\n", encoding="utf-8")
     (docs_dir / "HARNESS_SYSTEM_MAP.md").write_text("# Harness System Map\n", encoding="utf-8")
     (docs_dir / "HARNESS_SHOWCASE.md").write_text("# Harness Showcase\n", encoding="utf-8")
+    (docs_dir / "SHOWCASE_FIXTURE_REFRESH.md").write_text(
+        "# Showcase Fixture Refresh\n\n"
+        + "\n".join(validate_repo.SHOWCASE_FIXTURE_REFRESH_REQUIRED_TERMS)
+        + "\n",
+        encoding="utf-8",
+    )
     (docs_dir / "HARNESS_RUN_WALKTHROUGH.md").write_text(
         "# Harness Run Walkthrough\n\n"
         + "\n".join(validate_repo.HARNESS_RUN_WALKTHROUGH_REQUIRED_TERMS)
@@ -378,7 +385,8 @@ def test_harness_docs_validation_reports_missing_readme_links(tmp_path: Path) ->
             "WARN",
             "`README.md` is missing harness docs links: "
             "docs/AUTO_RESEARCH_HARNESS.md, docs/HARNESS_OPERATING_MODEL.md, "
-            "docs/HARNESS_SYSTEM_MAP.md, docs/HARNESS_SHOWCASE.md, docs/HARNESS_RUN_WALKTHROUGH.md, "
+            "docs/HARNESS_SYSTEM_MAP.md, docs/HARNESS_SHOWCASE.md, "
+            "docs/SHOWCASE_FIXTURE_REFRESH.md, docs/HARNESS_RUN_WALKTHROUGH.md, "
             "docs/HARNESS_IMPROVEMENT_LOOP.md, docs/ARTIFACT_INTERFACE_STANDARD.md, "
             "docs/PIPELINE_TAXONOMY.md, docs/PROJECT_LANGUAGE.md, "
             "docs/HARNESS_ROADMAP.md, docs/HARNESS_READINESS.md, "
@@ -456,6 +464,24 @@ def test_harness_docs_validation_reports_missing_walkthrough_pack_terms(tmp_path
             "`doctor-report.v1`, `run-audit.v1`, `improvement-report.v1`, `artifact-pack.v1`.",
         )
     ]
+
+
+def test_harness_docs_validation_reports_missing_fixture_refresh_terms(tmp_path: Path) -> None:
+    _write_minimal_harness_docs(tmp_path)
+    (tmp_path / "README.md").write_text(_readme_with_harness_links(), encoding="utf-8")
+    (tmp_path / "README.zh-CN.md").write_text(_readme_with_harness_links(), encoding="utf-8")
+    (tmp_path / "docs" / "SHOWCASE_FIXTURE_REFRESH.md").write_text(
+        "# Showcase Fixture Refresh\n\nworkspaces/\nexample/\n",
+        encoding="utf-8",
+    )
+
+    findings = validate_repo._validate_harness_docs(repo_root=tmp_path, docs_dir=tmp_path / "docs")
+
+    assert len(findings) == 1
+    assert findings[0].level == "WARN"
+    assert "`docs/SHOWCASE_FIXTURE_REFRESH.md` is missing fixture-refresh contract terms" in findings[0].message
+    assert "python scripts/pipeline.py pack --workspace" in findings[0].message
+    assert "python scripts/showcase_audit.py --strict" in findings[0].message
 
 
 def test_harness_docs_validation_reports_missing_artifact_interface_metadata(tmp_path: Path) -> None:

@@ -7,6 +7,7 @@ HARNESS_DOC_ENTRYPOINTS = {
     "docs/HARNESS_ARCHITECTURE.md": "harness architecture",
     "docs/HARNESS_SYSTEM_MAP.md": "harness system map",
     "docs/HARNESS_SHOWCASE.md": "harness showcase",
+    "docs/SHOWCASE_FIXTURE_REFRESH.md": "showcase fixture refresh guide",
     "docs/HARNESS_RUN_WALKTHROUGH.md": "harness run walkthrough",
     "docs/HARNESS_IMPROVEMENT_LOOP.md": "harness improvement loop",
     "docs/ARTIFACT_INTERFACE_STANDARD.md": "artifact interface standard",
@@ -40,6 +41,7 @@ HARNESS_README_LINKS = (
     "docs/HARNESS_ARCHITECTURE.md",
     "docs/HARNESS_SYSTEM_MAP.md",
     "docs/HARNESS_SHOWCASE.md",
+    "docs/SHOWCASE_FIXTURE_REFRESH.md",
     "docs/HARNESS_RUN_WALKTHROUGH.md",
     "docs/HARNESS_IMPROVEMENT_LOOP.md",
     "docs/ARTIFACT_INTERFACE_STANDARD.md",
@@ -248,6 +250,25 @@ HARNESS_LOCAL_CHECKS = (
     HARNESS_SHOWCASE_AUDIT_GATE,
 )
 
+SHOWCASE_FIXTURE_REFRESH_REQUIRED_TERMS = (
+    "Refresh Boundary",
+    "workspaces/",
+    "example/",
+    'WS=workspaces/<completed-workspace>',
+    'python scripts/pipeline.py doctor --workspace "$WS" --write',
+    'python scripts/pipeline.py audit --workspace "$WS" --write',
+    'python scripts/pipeline.py improve --workspace "$WS" --write',
+    'python scripts/pipeline.py pack --workspace "$WS" --write --write-excerpt',
+    "ARTIFACT_PACK_EXCERPT.md",
+    "ARTIFACT_PACK_EXCERPT.tsv",
+    "docs/HARNESS_SHOWCASE.md",
+    "docs/ARTIFACT_PACK_SCHEMA.md",
+    "docs/SHOWCASE_AUDIT_SCHEMA.md",
+    "python scripts/showcase_audit.py --strict",
+    "python scripts/showcase_audit.py --format json",
+    "python scripts/validate_repo.py --no-check-quality --strict",
+)
+
 READINESS_AUDIT_SCHEMA = "harness-readiness-audit.v1"
 READINESS_PROGRESS_PATH = "workspaces/harness-upgrade/GOAL_STATUS.md"
 READINESS_MIN_ITERATIONS = 10
@@ -260,6 +281,7 @@ READINESS_REQUIRED_DOCS = (
     "docs/HARNESS_ARCHITECTURE.md",
     "docs/HARNESS_SYSTEM_MAP.md",
     "docs/HARNESS_SHOWCASE.md",
+    "docs/SHOWCASE_FIXTURE_REFRESH.md",
     "docs/HARNESS_RUN_WALKTHROUGH.md",
     "docs/HARNESS_IMPROVEMENT_LOOP.md",
     "docs/ARTIFACT_INTERFACE_STANDARD.md",

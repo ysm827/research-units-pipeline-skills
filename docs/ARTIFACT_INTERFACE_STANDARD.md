@@ -82,7 +82,7 @@ enough.
 | Audit comparison | Prove whether a repair improved evidence | `output/RUN_AUDIT_DIFF.md` | `output/RUN_AUDIT_DIFF.json` (`run-audit-diff.v1`) | audit-diff logic, schema doc, regression test |
 | Improvement report | Map failed evidence to upstream repair surfaces | `output/IMPROVEMENT_REPORT.md` | `output/IMPROVEMENT_REPORT.json` (`improvement-report.v1`) | skill, pipeline, unit template, schema, validator, ADR, or glossary |
 | Skill hygiene | Keep capability surface maintainable | console summary, audit docs | `skill-audit-report.v1` JSON output | skill doc, skill standard, audit rule |
-| Showcase | Let readers inspect deliverables first | `docs/HARNESS_SHOWCASE.md`, example READMEs | `harness-showcase-audit.v1` JSON output | fixture, protocol link, showcase audit |
+| Showcase | Let readers inspect deliverables first | `docs/HARNESS_SHOWCASE.md`, `docs/SHOWCASE_FIXTURE_REFRESH.md`, example READMEs | `harness-showcase-audit.v1` JSON output | fixture, protocol link, fixture refresh, showcase audit |
 | Artifact pack | Index final deliverables and traceable run evidence | `output/ARTIFACT_PACK.md`, optional `output/ARTIFACT_PACK_EXCERPT.md` | `output/ARTIFACT_PACK.json` (`artifact-pack.v1`), optional `output/ARTIFACT_PACK_EXCERPT.tsv` | target artifact, unit output, run ledger, harness report, unit manifest |
 | Learning layer | Promote repeated lessons | ADRs, project language, roadmap, pattern register | validation metadata and link checks | ADR, glossary, roadmap, validate_repo |
 

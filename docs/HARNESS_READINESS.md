@@ -17,6 +17,7 @@ The repo now has the main pieces of a file-first harness system:
 - architecture narrative in `docs/HARNESS_ARCHITECTURE.md`
 - visual layer and execution map in `docs/HARNESS_SYSTEM_MAP.md`
 - deliverable-first showcase in `docs/HARNESS_SHOWCASE.md`
+- fixture refresh guide in `docs/SHOWCASE_FIXTURE_REFRESH.md`
 - command-level run walkthrough in `docs/HARNESS_RUN_WALKTHROUGH.md`
 - bounded self-improvement model in `docs/HARNESS_IMPROVEMENT_LOOP.md`
 - artifact interface standard in `docs/ARTIFACT_INTERFACE_STANDARD.md`
@@ -63,7 +64,7 @@ The repo now has the main pieces of a file-first harness system:
 | Deliverable-first handoff is inspectable | `pipeline.py pack --write` creates `ARTIFACT_PACK.md/json`; `docs/ARTIFACT_PACK_SCHEMA.md` documents `artifact-pack.v1`; ADR 0008 keeps it as a manifest before archive export | Substantial | It indexes artifacts but does not yet copy, compress, publish, or render a dashboard |
 | Intermediate artifacts have a declared interface | `docs/ARTIFACT_INTERFACE_STANDARD.md` defines artifact path, producer, consumer, format, human view, machine view, trace keys, repair surface, validation, and visibility; `scripts/validate_repo.py` checks the standard's required sections, fields, formats, and current repo mappings | Substantial and validation-backed | Future new artifact families still need local validation when drift becomes concrete |
 | External patterns are adopted selectively | Architecture, roadmap, taxonomy, language, `docs/PATTERN_REGISTER.md`, ADR docs, and pattern-register contract validation map external patterns to repo mechanisms | Substantial and validation-backed | Avoid importing large runtime stacks before file-first pain justifies them |
-| Existing workflows remain usable | Strict validation, smoke tests, doctor/audit tests, WARN-level skill audit checks, showcase audit checks, tracked `research-brief` and `source-tutorial` showcase fixtures, `scripts/showcase_audit.py`, `docs/SHOWCASE_AUDIT_SCHEMA.md`, and a local completed `source-tutorial` workspace exhibit when available | Partially proven | Full end-to-end runs are not part of the lightweight readiness gate |
+| Existing workflows remain usable | Strict validation, smoke tests, doctor/audit tests, WARN-level skill audit checks, showcase audit checks, tracked `research-brief` and `source-tutorial` showcase fixtures, `scripts/showcase_audit.py`, `docs/SHOWCASE_AUDIT_SCHEMA.md`, `docs/SHOWCASE_FIXTURE_REFRESH.md`, and a local completed `source-tutorial` workspace exhibit when available | Partially proven | Full end-to-end runs are not part of the lightweight readiness gate |
 | Skill audit signal is actionable | `scripts/audit_skills.py` distinguishes diagnostic/example ellipsis from likely generated-artifact leakage, emits fine-grained `review_category` values plus `next_action`, supports review-category filtering/limits/summary-only output, documents `skill-audit-report.v1` in `docs/SKILL_AUDIT_SCHEMA.md`, and is checked locally with `python scripts/audit_skills.py --fail-on WARN` | Improved and locally checkable | INFO-level findings remain review signals rather than blockers |
 
 ## Adopted Patterns And Repo Mapping
@@ -105,6 +106,7 @@ current worktree:
 4. Inspect `README.md`, `README.zh-CN.md`, `docs/AUTO_RESEARCH_HARNESS.md`,
    `docs/HARNESS_OPERATING_MODEL.md`, `docs/HARNESS_ARCHITECTURE.md`,
    `docs/HARNESS_SYSTEM_MAP.md`, `docs/HARNESS_SHOWCASE.md`,
+   `docs/SHOWCASE_FIXTURE_REFRESH.md`,
    `docs/PIPELINE_TAXONOMY.md`, `docs/PROJECT_LANGUAGE.md`,
    `docs/HARNESS_RUN_WALKTHROUGH.md`, `docs/HARNESS_IMPROVEMENT_LOOP.md`,
    `docs/ARTIFACT_INTERFACE_STANDARD.md`,

@@ -171,7 +171,7 @@ python scripts/pipeline.py pack --workspace workspaces/<name> --write-excerpt
 
 `pipeline.py audit-diff` 会比较两个有效的 `RUN_AUDIT.json`，加上 `--write` 后会在 after payload 旁写入 `RUN_AUDIT_DIFF.md` 和 `RUN_AUDIT_DIFF.json`。当一次 repair 或后续 unit 应当证明 target artifacts、unit status、manifests 或 harness issues 真的改善，而不只是发生变化时，用这个命令。`pipeline.py improve --write` 会生成 `output/IMPROVEMENT_REPORT.md` 和 `output/IMPROVEMENT_REPORT.json`，把 doctor / run-audit evidence 转成上游接口、repair surface 和 validation command。`pipeline.py pack --write` 会生成 `output/ARTIFACT_PACK.md` 和 `output/ARTIFACT_PACK.json`，作为先看交付物的 manifest，索引 target artifacts、unit outputs、run ledger、harness reports 和 unit manifests，但不导出压缩包。如果要给 fixture 或 review note 生成可移植的 Markdown/TSV handoff excerpt，可以加 `--write-excerpt`。
 
-如果要理解架构层，请先看 [docs/AUTO_RESEARCH_HARNESS.md](docs/AUTO_RESEARCH_HARNESS.md)，再看 [docs/HARNESS_OPERATING_MODEL.md](docs/HARNESS_OPERATING_MODEL.md)、[docs/HARNESS_ARCHITECTURE.md](docs/HARNESS_ARCHITECTURE.md)、可视化层级图 [docs/HARNESS_SYSTEM_MAP.md](docs/HARNESS_SYSTEM_MAP.md)、先看交付物的展示路径 [docs/HARNESS_SHOWCASE.md](docs/HARNESS_SHOWCASE.md)、命令级运行示例 [docs/HARNESS_RUN_WALKTHROUGH.md](docs/HARNESS_RUN_WALKTHROUGH.md)、有边界的 self-improvement 模型 [docs/HARNESS_IMPROVEMENT_LOOP.md](docs/HARNESS_IMPROVEMENT_LOOP.md)，以及中间产物接口标准 [docs/ARTIFACT_INTERFACE_STANDARD.md](docs/ARTIFACT_INTERFACE_STANDARD.md)。分阶段升级路径在 [docs/HARNESS_ROADMAP.md](docs/HARNESS_ROADMAP.md)，当前完成证据总账在 [docs/HARNESS_READINESS.md](docs/HARNESS_READINESS.md)，快速 readiness audit 合同在 [docs/HARNESS_READINESS_AUDIT.md](docs/HARNESS_READINESS_AUDIT.md)，外部模式到本 repo 的映射在 [docs/PATTERN_REGISTER.md](docs/PATTERN_REGISTER.md)，`skill-audit-report.v1` 字段合同在 [docs/SKILL_AUDIT_SCHEMA.md](docs/SKILL_AUDIT_SCHEMA.md)，`doctor-report.v1` 字段合同在 [docs/DOCTOR_REPORT_SCHEMA.md](docs/DOCTOR_REPORT_SCHEMA.md)，`run-audit.v1` 字段合同在 [docs/RUN_AUDIT_SCHEMA.md](docs/RUN_AUDIT_SCHEMA.md)，`run-audit-diff.v1` 字段合同在 [docs/RUN_AUDIT_DIFF_SCHEMA.md](docs/RUN_AUDIT_DIFF_SCHEMA.md)，`harness-showcase-audit.v1` 字段合同在 [docs/SHOWCASE_AUDIT_SCHEMA.md](docs/SHOWCASE_AUDIT_SCHEMA.md)，`improvement-report.v1` 字段合同在 [docs/IMPROVEMENT_REPORT_SCHEMA.md](docs/IMPROVEMENT_REPORT_SCHEMA.md)，`artifact-pack.v1` 字段合同在 [docs/ARTIFACT_PACK_SCHEMA.md](docs/ARTIFACT_PACK_SCHEMA.md)。架构决策记录放在 [docs/adr/](docs/adr/)，包括 skills 与 harness 的职责分层，以及 doctor / run-audit / audit-diff / showcase-audit / improvement-report / artifact-pack JSON 决策。
+如果要理解架构层，请先看 [docs/AUTO_RESEARCH_HARNESS.md](docs/AUTO_RESEARCH_HARNESS.md)，再看 [docs/HARNESS_OPERATING_MODEL.md](docs/HARNESS_OPERATING_MODEL.md)、[docs/HARNESS_ARCHITECTURE.md](docs/HARNESS_ARCHITECTURE.md)、可视化层级图 [docs/HARNESS_SYSTEM_MAP.md](docs/HARNESS_SYSTEM_MAP.md)、先看交付物的展示路径 [docs/HARNESS_SHOWCASE.md](docs/HARNESS_SHOWCASE.md)、fixture 刷新指南 [docs/SHOWCASE_FIXTURE_REFRESH.md](docs/SHOWCASE_FIXTURE_REFRESH.md)、命令级运行示例 [docs/HARNESS_RUN_WALKTHROUGH.md](docs/HARNESS_RUN_WALKTHROUGH.md)、有边界的 self-improvement 模型 [docs/HARNESS_IMPROVEMENT_LOOP.md](docs/HARNESS_IMPROVEMENT_LOOP.md)，以及中间产物接口标准 [docs/ARTIFACT_INTERFACE_STANDARD.md](docs/ARTIFACT_INTERFACE_STANDARD.md)。分阶段升级路径在 [docs/HARNESS_ROADMAP.md](docs/HARNESS_ROADMAP.md)，当前完成证据总账在 [docs/HARNESS_READINESS.md](docs/HARNESS_READINESS.md)，快速 readiness audit 合同在 [docs/HARNESS_READINESS_AUDIT.md](docs/HARNESS_READINESS_AUDIT.md)，外部模式到本 repo 的映射在 [docs/PATTERN_REGISTER.md](docs/PATTERN_REGISTER.md)，`skill-audit-report.v1` 字段合同在 [docs/SKILL_AUDIT_SCHEMA.md](docs/SKILL_AUDIT_SCHEMA.md)，`doctor-report.v1` 字段合同在 [docs/DOCTOR_REPORT_SCHEMA.md](docs/DOCTOR_REPORT_SCHEMA.md)，`run-audit.v1` 字段合同在 [docs/RUN_AUDIT_SCHEMA.md](docs/RUN_AUDIT_SCHEMA.md)，`run-audit-diff.v1` 字段合同在 [docs/RUN_AUDIT_DIFF_SCHEMA.md](docs/RUN_AUDIT_DIFF_SCHEMA.md)，`harness-showcase-audit.v1` 字段合同在 [docs/SHOWCASE_AUDIT_SCHEMA.md](docs/SHOWCASE_AUDIT_SCHEMA.md)，`improvement-report.v1` 字段合同在 [docs/IMPROVEMENT_REPORT_SCHEMA.md](docs/IMPROVEMENT_REPORT_SCHEMA.md)，`artifact-pack.v1` 字段合同在 [docs/ARTIFACT_PACK_SCHEMA.md](docs/ARTIFACT_PACK_SCHEMA.md)。架构决策记录放在 [docs/adr/](docs/adr/)，包括 skills 与 harness 的职责分层，以及 doctor / run-audit / audit-diff / showcase-audit / improvement-report / artifact-pack JSON 决策。
 
 ## 推荐阅读路径
 
@@ -181,13 +181,14 @@ python scripts/pipeline.py pack --workspace workspaces/<name> --write-excerpt
 4. 再看 [docs/HARNESS_OPERATING_MODEL.md](docs/HARNESS_OPERATING_MODEL.md)，理解金字塔模型和系统故事。
 5. 再看 [docs/HARNESS_SYSTEM_MAP.md](docs/HARNESS_SYSTEM_MAP.md)，理解层级关系和执行闭环。
 6. 再看 [docs/HARNESS_RUN_WALKTHROUGH.md](docs/HARNESS_RUN_WALKTHROUGH.md)，理解一个真实初始化 workspace、doctor report、run audit、improvement report 和 artifact-pack manifest 如何串起来。
-7. 再看 [docs/HARNESS_IMPROVEMENT_LOOP.md](docs/HARNESS_IMPROVEMENT_LOOP.md)，理解最终交付物的问题如何反向修复中间 artifacts 和合同。
-8. 如果要新增中间 report、表格、sidecar 或 artifact pack，再看 [docs/ARTIFACT_INTERFACE_STANDARD.md](docs/ARTIFACT_INTERFACE_STANDARD.md)。
-9. 如果你要改系统而不是只运行流程，再看 [docs/HARNESS_ARCHITECTURE.md](docs/HARNESS_ARCHITECTURE.md)。
-10. 用 [docs/HARNESS_ROADMAP.md](docs/HARNESS_ROADMAP.md) 判断哪些升级已采纳、暂缓或下一步要做。
-11. 再打开与你任务和语言对应的功能说明。
-12. 然后去看 `pipelines/` 下对应的 pipeline 合同。
-13. 如果你要改行为而不是只运行，再去看 `.codex/skills/` 里的相关 skills。
+7. 刷新 tracked examples 之前，先看 [docs/SHOWCASE_FIXTURE_REFRESH.md](docs/SHOWCASE_FIXTURE_REFRESH.md)。
+8. 再看 [docs/HARNESS_IMPROVEMENT_LOOP.md](docs/HARNESS_IMPROVEMENT_LOOP.md)，理解最终交付物的问题如何反向修复中间 artifacts 和合同。
+9. 如果要新增中间 report、表格、sidecar 或 artifact pack，再看 [docs/ARTIFACT_INTERFACE_STANDARD.md](docs/ARTIFACT_INTERFACE_STANDARD.md)。
+10. 如果你要改系统而不是只运行流程，再看 [docs/HARNESS_ARCHITECTURE.md](docs/HARNESS_ARCHITECTURE.md)。
+11. 用 [docs/HARNESS_ROADMAP.md](docs/HARNESS_ROADMAP.md) 判断哪些升级已采纳、暂缓或下一步要做。
+12. 再打开与你任务和语言对应的功能说明。
+13. 然后去看 `pipelines/` 下对应的 pipeline 合同。
+14. 如果你要改行为而不是只运行，再去看 `.codex/skills/` 里的相关 skills。
 
 ## 文档导航
 
@@ -210,6 +211,7 @@ python scripts/pipeline.py pack --workspace workspaces/<name> --write-excerpt
 - [docs/HARNESS_OPERATING_MODEL.md](docs/HARNESS_OPERATING_MODEL.md)
 - [docs/HARNESS_SYSTEM_MAP.md](docs/HARNESS_SYSTEM_MAP.md)
 - [docs/HARNESS_SHOWCASE.md](docs/HARNESS_SHOWCASE.md)
+- [docs/SHOWCASE_FIXTURE_REFRESH.md](docs/SHOWCASE_FIXTURE_REFRESH.md)
 - [docs/HARNESS_RUN_WALKTHROUGH.md](docs/HARNESS_RUN_WALKTHROUGH.md)
 - [docs/HARNESS_IMPROVEMENT_LOOP.md](docs/HARNESS_IMPROVEMENT_LOOP.md)
 - [docs/ARTIFACT_INTERFACE_STANDARD.md](docs/ARTIFACT_INTERFACE_STANDARD.md)

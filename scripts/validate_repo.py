@@ -38,6 +38,7 @@ from tooling.harness_contracts import (
     HARNESS_SHOWCASE_ASSET_PATHS,
     HARNESS_SHOWCASE_FIXTURE_PATHS,
     HARNESS_SKILL_AUDIT_GATE,
+    SHOWCASE_FIXTURE_REFRESH_REQUIRED_TERMS,
     AUTO_RESEARCH_REQUIRED_TERMS,
     PATTERN_REGISTER_REQUIRED_ADOPTION_RULES,
     PATTERN_REGISTER_REQUIRED_PATTERN_SOURCES,
@@ -445,6 +446,7 @@ def _validate_harness_docs(*, repo_root: Path, docs_dir: Path) -> list[Finding]:
                 "docs/PATTERN_REGISTER.md",
                 "docs/HARNESS_SYSTEM_MAP.md",
                 "docs/HARNESS_SHOWCASE.md",
+                "docs/SHOWCASE_FIXTURE_REFRESH.md",
                 "docs/HARNESS_RUN_WALKTHROUGH.md",
                 "docs/HARNESS_IMPROVEMENT_LOOP.md",
                 "docs/ARTIFACT_INTERFACE_STANDARD.md",
@@ -481,6 +483,7 @@ def _validate_harness_docs(*, repo_root: Path, docs_dir: Path) -> list[Finding]:
     findings.extend(_validate_auto_research_harness_doc(repo_root=repo_root))
     findings.extend(_validate_artifact_interface_standard(repo_root=repo_root))
     findings.extend(_validate_harness_showcase(repo_root=repo_root))
+    findings.extend(_validate_showcase_fixture_refresh(repo_root=repo_root))
     findings.extend(_validate_pattern_register(repo_root=repo_root))
     findings.extend(_validate_local_harness_checks(repo_root=repo_root))
     findings.extend(_validate_harness_readiness_audit(repo_root=repo_root))
@@ -573,6 +576,27 @@ def _validate_harness_showcase(*, repo_root: Path) -> list[Finding]:
             )
         ]
     return []
+
+
+def _validate_showcase_fixture_refresh(*, repo_root: Path) -> list[Finding]:
+    rel_path = "docs/SHOWCASE_FIXTURE_REFRESH.md"
+    doc_path = repo_root / rel_path
+    if not doc_path.exists():
+        return []
+
+    text = doc_path.read_text(encoding="utf-8", errors="ignore")
+    missing = [term for term in SHOWCASE_FIXTURE_REFRESH_REQUIRED_TERMS if term not in text]
+    if not missing:
+        return []
+
+    return [
+        Finding(
+            "WARN",
+            f"`{rel_path}` is missing fixture-refresh contract terms: "
+            + ", ".join(f"`{term}`" for term in missing)
+            + ".",
+        )
+    ]
 
 
 def _validate_pattern_register(*, repo_root: Path) -> list[Finding]:

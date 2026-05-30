@@ -7,6 +7,9 @@ The showcase complements `docs/HARNESS_RUN_WALKTHROUGH.md`. The walkthrough
 proves that the CLI can initialize, diagnose, and audit a workspace. This
 showcase explains how a reader should inspect the result of a workflow first,
 then use the harness to understand how the result was constrained.
+When a tracked fixture needs to be refreshed from a completed local workspace,
+use `docs/SHOWCASE_FIXTURE_REFRESH.md` so the refresh keeps portable evidence
+without committing private workspace state.
 
 ## Showcase Principle
 
@@ -104,7 +107,8 @@ full live retrieval run. The artifact-pack excerpt uses repo-relative paths so
 it can be tracked under `example/` without embedding a developer's local
 workspace path. Future refreshed excerpts should be generated from a live
 workspace with `pipeline.py pack --write-excerpt`, then curated into the
-tracked fixture when appropriate.
+tracked fixture by following `docs/SHOWCASE_FIXTURE_REFRESH.md` when
+appropriate.
 
 ## Tracked Source-Tutorial Fixture
 
@@ -149,7 +153,8 @@ Its artifact-pack excerpt uses the same relative-path pattern as the compact
 research-brief fixture, but covers richer delivery surfaces and separate
 human-readable versus model-readable evidence. Future refreshed excerpts should
 use `pipeline.py pack --write-excerpt` as the source before curating
-fixture-specific role labels.
+fixture-specific role labels with `docs/SHOWCASE_FIXTURE_REFRESH.md` as the
+refresh contract.
 
 ## Completed Local Workspace Exhibit
 

@@ -13,14 +13,15 @@ The goal of this document is to keep two layers separate:
   and reports currently realize that architecture
 
 For visuals, use `docs/HARNESS_SYSTEM_MAP.md`. For a deliverable-first exhibit,
-use `docs/HARNESS_SHOWCASE.md`. For a command-level run, use
-`docs/HARNESS_RUN_WALKTHROUGH.md`. For the bounded self-improvement control
-loop, use `docs/HARNESS_IMPROVEMENT_LOOP.md`. For closure evidence, use
-`docs/HARNESS_READINESS.md` and `docs/HARNESS_READINESS_AUDIT.md`. The
-artifact interface standard for intermediate reports, tables, sidecars, and
-artifact packs lives in `docs/ARTIFACT_INTERFACE_STANDARD.md`. External
-patterns are tracked in `docs/PATTERN_REGISTER.md`; canonical terms are tracked
-in `docs/PROJECT_LANGUAGE.md`.
+use `docs/HARNESS_SHOWCASE.md`. For refreshing tracked fixtures from completed
+local workspaces, use `docs/SHOWCASE_FIXTURE_REFRESH.md`. For a command-level
+run, use `docs/HARNESS_RUN_WALKTHROUGH.md`. For the bounded self-improvement
+control loop, use `docs/HARNESS_IMPROVEMENT_LOOP.md`. For closure evidence, use
+`docs/HARNESS_READINESS.md` and `docs/HARNESS_READINESS_AUDIT.md`. The artifact
+interface standard for intermediate reports, tables, sidecars, and artifact
+packs lives in `docs/ARTIFACT_INTERFACE_STANDARD.md`. External patterns are
+tracked in `docs/PATTERN_REGISTER.md`; canonical terms are tracked in
+`docs/PROJECT_LANGUAGE.md`.
 
 ## Architectural Thesis
 
@@ -164,6 +165,7 @@ Authoritative files:
 - `docs/HARNESS_IMPROVEMENT_LOOP.md`
 - `docs/ARTIFACT_INTERFACE_STANDARD.md`
 - `docs/HARNESS_SHOWCASE.md`
+- `docs/SHOWCASE_FIXTURE_REFRESH.md`
 - `docs/HARNESS_RUN_WALKTHROUGH.md`
 - `docs/RUN_AUDIT_SCHEMA.md`
 - `docs/RUN_AUDIT_DIFF_SCHEMA.md`
