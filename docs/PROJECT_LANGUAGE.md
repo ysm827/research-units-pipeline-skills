@@ -257,10 +257,21 @@ workspaces/<name>`.
 
 The doctor should inspect state without mutating it by default. It reports
 pipeline lock, current checkpoint, unit status counts, next runnable unit,
-harness issues, typed remediation categories, next actions, and recent reports.
-With `--write`, it persists the same diagnosis as `output/DOCTOR_REPORT.md`
-and `output/DOCTOR_REPORT.json`. The Markdown/JSON split is an accepted
-architecture decision.
+harness issues, typed remediation categories, next actions, recent reports,
+and an advisory resume hint. With `--write`, it persists the same diagnosis as
+`output/DOCTOR_REPORT.md` and `output/DOCTOR_REPORT.json`. The Markdown/JSON
+split is an accepted architecture decision.
+
+### Resume hint
+
+The doctor field that tells the next operator how to continue from the current
+workspace state.
+
+Use resume hint for the bounded continuation class in `doctor-report.v1`,
+especially `run_next_unit`, `repair_first`, and `audit_state`. It should point
+to a concrete command and explain why that command is safe. Do not use resume
+hint as a synonym for automatic repair; it is advisory and remains downstream
+from doctor issues, checkpoints, and artifact evidence.
 
 ### Doctor report schema
 

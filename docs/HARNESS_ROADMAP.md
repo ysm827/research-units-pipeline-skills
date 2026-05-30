@@ -148,6 +148,9 @@ Candidate changes:
   for the `doctor-report.v1` shape before adding repair automation.
 - Keep `docs/DOCTOR_REPORT_SCHEMA.md` aligned with that compatibility check so
   recovery tooling does not need to reverse-engineer Markdown.
+- Add an advisory `resume_hint` to doctor output so a resumed operator can
+  distinguish "run the next unit", "repair first", and "audit the completed
+  state" without reading chat history.
 - Keep schema validation helpers shared inside `tooling/harness.py` so future
   workspace JSON sidecars do not duplicate type-checking logic.
 - Keep schema reference metadata validation in `scripts/validate_repo.py` so
@@ -160,6 +163,8 @@ Acceptance:
 - The same report can be persisted as `output/DOCTOR_REPORT.md` when a durable
   handoff artifact is useful, with `output/DOCTOR_REPORT.json` as the
   machine-readable sidecar.
+- The JSON sidecar exposes a validated resume hint with a continuation class,
+  command, and reason.
 - Existing doctor tests still pass for all initialized executable pipelines.
 - The doctor remains safe to run before and after interrupted execution.
 

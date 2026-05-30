@@ -127,6 +127,9 @@ def test_doctor_reports_next_runnable_unit(tmp_path: Path) -> None:
 
     assert result.returncode == 0, result.stderr or result.stdout
     assert "Next runnable: `U010` Write (`demo`)" in result.stdout
+    assert "Kind: `run_next_unit`" in result.stdout
+    assert f"Command: `python scripts/pipeline.py run --workspace {workspace.resolve()}`" in result.stdout
+    assert "Reason: Next runnable unit U010 is ready." in result.stdout
     assert "Current checkpoint: `C1`" in result.stdout
     assert "DONE: 1" in result.stdout
     assert "TODO: 1" in result.stdout
@@ -226,6 +229,8 @@ def test_doctor_reports_typed_remediation_for_missing_units(tmp_path: Path) -> N
     assert "ERROR `missing_units`: Missing" in result.stdout
     assert "Remediation: `restore_workspace_contract`" in result.stdout
     assert "Next action: Create or restore `UNITS.csv` from the selected pipeline unit template" in result.stdout
+    assert "Kind: `repair_first`" in result.stdout
+    assert f"Command: `python scripts/pipeline.py improve --workspace {workspace.resolve()} --write`" in result.stdout
     assert "`restore_workspace_contract`: 1" in result.stdout
 
 
@@ -259,10 +264,14 @@ def test_doctor_writes_durable_report_when_requested(tmp_path: Path) -> None:
     report = report_path.read_text(encoding="utf-8")
     assert "# Pipeline doctor" in report
     assert "DONE: 1" in report
+    assert "Kind: `audit_state`" in report
+    assert f"Command: `python scripts/pipeline.py audit --workspace {workspace.resolve()} --write`" in report
     assert "No harness issues" in report
     payload = json.loads(json_path.read_text(encoding="utf-8"))
     assert payload["schema"] == "doctor-report.v1"
     assert payload["unit_status"] == {"DONE": 1}
+    assert payload["resume_hint"]["kind"] == "audit_state"
+    assert payload["resume_hint"]["command"] == f"python scripts/pipeline.py audit --workspace {workspace.resolve()} --write"
     assert payload["verdict"] == "PASS"
     assert validate_doctor_payload(payload) == []
 
@@ -278,6 +287,7 @@ def test_doctor_payload_validator_reports_schema_drift() -> None:
         "units_present": "yes",
         "unit_status": {"DONE": "1"},
         "next_runnable": {"unit_id": 10},
+        "resume_hint": {"kind": 10, "command": "python scripts/pipeline.py audit --workspace /tmp/ws --write"},
         "harness_issues": [],
         "remediation_summary": {},
         "recent_reports": [],
@@ -291,6 +301,8 @@ def test_doctor_payload_validator_reports_schema_drift() -> None:
     assert "`units_present` must be a boolean" in issues
     assert "`unit_status.DONE` must be an integer" in issues
     assert "`next_runnable.unit_id` must be a string" in issues
+    assert "`resume_hint.kind` must be a string" in issues
+    assert "`resume_hint.reason` is missing" in issues
 
 
 def test_audit_writes_compact_run_ledger_when_artifacts_are_present(tmp_path: Path) -> None:

@@ -91,6 +91,7 @@ verdict: PASS
 current checkpoint: C0
 unit status: TODO 11
 next runnable: U001 Initialize workspace and copy templates
+resume hint: run_next_unit -> python scripts/pipeline.py run --workspace workspaces/harness-demo-research-brief
 harness issues: none
 ```
 

@@ -30,6 +30,7 @@ DOCTOR_REPORT_REQUIRED_KEYS = (
     "units_present",
     "unit_status",
     "next_runnable",
+    "resume_hint",
     "harness_issues",
     "remediation_summary",
     "recent_reports",
@@ -281,6 +282,7 @@ def build_doctor_payload(*, workspace: Path, repo_root: Path) -> tuple[int, dict
         "units_present": units_path.exists(),
         "unit_status": unit_status,
         "next_runnable": next_runnable,
+        "resume_hint": _doctor_resume_hint(workspace=workspace, next_runnable=next_runnable, issues=issues),
         "harness_issues": [_issue_record(issue) for issue in issues],
         "remediation_summary": {category: remediation_counts[category] for category in sorted(remediation_counts)},
         "recent_reports": _recent_report_records(workspace),
@@ -329,6 +331,15 @@ def render_doctor_report(payload: dict[str, Any]) -> str:
             lines.append(f"- Next runnable: `{unit_id}` {title} (`{skill}`)")
         else:
             lines.append("- No runnable unit found")
+
+    lines.extend(["", "## Resume hint"])
+    resume_hint = payload.get("resume_hint") or {}
+    if resume_hint:
+        lines.append(f"- Kind: `{resume_hint.get('kind')}`")
+        lines.append(f"- Command: `{resume_hint.get('command')}`")
+        lines.append(f"- Reason: {resume_hint.get('reason')}")
+    else:
+        lines.append("- No resume hint available")
 
     lines.extend(["", "## Harness issues"])
     issues = payload.get("harness_issues") or []
@@ -387,6 +398,14 @@ def validate_doctor_payload(payload: dict[str, Any]) -> list[str]:
         for key in ("unit_id", "title", "skill"):
             if key in next_runnable and not isinstance(next_runnable.get(key), str):
                 issues.append(f"`next_runnable.{key}` must be a string")
+
+    resume_hint = _validate_object_field(payload, key="resume_hint", issues=issues)
+    if resume_hint is not None:
+        for key in ("kind", "command", "reason"):
+            if key not in resume_hint:
+                issues.append(f"`resume_hint.{key}` is missing")
+            elif not isinstance(resume_hint.get(key), str):
+                issues.append(f"`resume_hint.{key}` must be a string")
 
     _validate_issue_records(payload, issues=issues)
     _validate_recent_reports(payload, issues=issues)
@@ -1355,6 +1374,34 @@ def _issue_validation_command(code: str, workspace: Path) -> str:
     if code in {"missing_dependency", "dependency_cycle", "human_checkpoint_missing"}:
         return f"python scripts/pipeline.py doctor --workspace {workspace} --write"
     return f"python scripts/pipeline.py improve --workspace {workspace} --write"
+
+
+def _doctor_resume_hint(
+    *,
+    workspace: Path,
+    next_runnable: dict[str, str],
+    issues: list[HarnessIssue],
+) -> dict[str, str]:
+    if any(issue.level == "ERROR" for issue in issues):
+        return {
+            "kind": "repair_first",
+            "command": f"python scripts/pipeline.py improve --workspace {workspace} --write",
+            "reason": "Doctor found error-level harness issues; repair or classify them before running more units.",
+        }
+
+    if next_runnable:
+        unit_id = str(next_runnable.get("unit_id") or "the next unit")
+        return {
+            "kind": "run_next_unit",
+            "command": f"python scripts/pipeline.py run --workspace {workspace}",
+            "reason": f"Next runnable unit {unit_id} is ready.",
+        }
+
+    return {
+        "kind": "audit_state",
+        "command": f"python scripts/pipeline.py audit --workspace {workspace} --write",
+        "reason": "No runnable unit is currently available; audit the run state before continuing.",
+    }
 
 
 def find_next_runnable(table: UnitsTable) -> dict[str, str] | None:

@@ -33,6 +33,7 @@ and does not claim that outputs are semantically correct.
 | `units_present` | boolean | Whether `UNITS.csv` exists. |
 | `unit_status` | object | Counts by unit status from `UNITS.csv`; empty when units are missing. |
 | `next_runnable` | object | Compact next-runnable unit record, or empty when no unit can run. |
+| `resume_hint` | object | Compact continuation hint for the next operator or agent. |
 | `harness_issues` | list | Typed workspace issues found during diagnosis. |
 | `remediation_summary` | object | Counts by remediation category. |
 | `recent_reports` | list | Compact previews of recent harness report artifacts. |
@@ -48,6 +49,20 @@ and does not claim that outputs are semantically correct.
 | `unit_id` | string | Unit id from `UNITS.csv`. |
 | `title` | string | Unit title, or `(untitled)`. |
 | `skill` | string | Skill name, or `(no skill)`. |
+
+## Resume Hint
+
+`resume_hint` is always present and contains:
+
+| Field | Type | Meaning |
+|---|---|---|
+| `kind` | string | Continuation class, currently `run_next_unit`, `repair_first`, or `audit_state`. |
+| `command` | string | Suggested repo command for the next operator or agent. |
+| `reason` | string | Short explanation for why this command is the safest next move. |
+
+The resume hint is intentionally advisory. It makes interruption recovery more
+explicit, but it does not mutate the workspace, approve human checkpoints, or
+replace the issue-level `next_action` fields.
 
 ## Harness Issues
 
