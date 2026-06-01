@@ -312,6 +312,9 @@ Candidate changes:
 - Keep `docs/ARTIFACT_PACK_SCHEMA.md` aligned with `artifact-pack.v1` so future
   dashboards or archive exporters can consume the manifest without scraping
   Markdown.
+- Carry the run-audit `run_state` into artifact-pack source reports so
+  deliverable-first reviewers can see the compact run phase before opening the
+  full audit sidecar.
 - Add a run scorecard for B-side or lab settings: deliverable coverage,
   evidence depth, unresolved issues, human checkpoints, and comparison deltas.
 - Tighten high-frequency skill cards so natural-language routing can choose a
@@ -330,6 +333,8 @@ Acceptance:
   people and tools consume the artifact.
 - `pipeline.py pack --write` creates `ARTIFACT_PACK.md/json`, and
   `artifact-pack.v1` validates through `validate_artifact_pack_payload`.
+- Artifact-pack handoffs expose source report state without becoming a
+  dashboard or semantic evaluator.
 - New artifact families declare producer, consumer, trace keys, repair
   surface, visibility, and validation before downstream reliance.
 - Product-facing examples remain deliverable-first and auditable through

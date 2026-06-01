@@ -309,8 +309,9 @@ The workspace manifest command:
 
 Use artifact pack for the deliverable-first handoff surface that indexes final
 target artifacts, declared unit outputs, run ledgers, harness reports, and
-unit manifests. Do not describe it as a zip export, publication mechanism,
-dashboard, or semantic evaluator.
+unit manifests. It may carry the run-audit `run_state` as a compact source
+report summary for reviewers. Do not describe it as a zip export, publication
+mechanism, dashboard, or semantic evaluator.
 
 The human-readable report is `output/ARTIFACT_PACK.md`; the machine-readable
 sidecar is `output/ARTIFACT_PACK.json`.

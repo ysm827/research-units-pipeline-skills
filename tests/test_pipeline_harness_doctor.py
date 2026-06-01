@@ -572,11 +572,14 @@ def test_pack_writes_reviewable_artifact_manifest(tmp_path: Path) -> None:
     assert "target_artifact" in result.stdout
     assert "run_ledger" in result.stdout
     assert "unit_manifest" in result.stdout
+    assert "Run state: `complete_candidate`; 16 target artifacts present, 0 missing; 0 errors" in result.stdout
     assert "ARTIFACT_PACK_EXCERPT.md" in result.stdout
     payload = json.loads(json_path.read_text(encoding="utf-8"))
     assert payload["schema"] == "artifact-pack.v1"
     assert payload["verdict"] == "PASS"
     assert payload["source_reports"]["run_audit"]["schema"] == "run-audit.v1"
+    assert payload["source_reports"]["run_audit"]["run_state"]["phase"] == "complete_candidate"
+    assert payload["source_reports"]["run_audit"]["run_state"]["target_artifacts_missing"] == 0
     assert payload["summary"]["by_category"]["target_artifact"]["missing"] == 0
     categories = {record["category"] for record in payload["artifacts"]}
     assert {"target_artifact", "unit_output", "run_ledger", "harness_report", "unit_manifest"}.issubset(categories)
@@ -598,7 +601,14 @@ def test_artifact_pack_payload_validator_reports_shape_errors() -> None:
         "repo": "/tmp/repo",
         "pipeline": "research-brief",
         "artifact_interface_standard": "docs/ARTIFACT_INTERFACE_STANDARD.md",
-        "source_reports": {"run_audit": {"schema": "run-audit.v1", "verdict": "PASS", "exit_code": "0"}},
+        "source_reports": {
+            "run_audit": {
+                "schema": "run-audit.v1",
+                "verdict": "PASS",
+                "exit_code": "0",
+                "run_state": {"phase": "stuck", "units_total": "1"},
+            }
+        },
         "artifacts": [{"category": "target_artifact", "path": "output/SNAPSHOT.md", "exists": "yes"}],
         "summary": {"total": 1, "present": "1", "missing": 0, "by_category": {"target_artifact": {"total": 1}}},
         "verdict": "PASS",
@@ -609,6 +619,9 @@ def test_artifact_pack_payload_validator_reports_shape_errors() -> None:
 
     assert "`schema` must be `artifact-pack.v1`" in issues
     assert "`source_reports.run_audit.exit_code` must be an integer" in issues
+    assert "`source_reports.run_audit.run_state.phase` must be one of attention, complete_candidate, in_progress" in issues
+    assert "`source_reports.run_audit.run_state.units_total` must be an integer" in issues
+    assert "`source_reports.run_audit.run_state.active_units` must be an integer" in issues
     assert "`artifacts[0].exists` must be a boolean" in issues
     assert "`summary.present` must be an integer" in issues
     assert "`summary.by_category.target_artifact.present` must be an integer" in issues

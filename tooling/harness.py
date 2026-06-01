@@ -65,6 +65,18 @@ RUN_AUDIT_LEDGER_KEYS = (
     "CHECKPOINTS.md",
     "DECISIONS.md",
 )
+RUN_STATE_PHASES = {"attention", "in_progress", "complete_candidate"}
+RUN_STATE_INTEGER_KEYS = (
+    "units_total",
+    "active_units",
+    "target_artifacts_total",
+    "target_artifacts_present",
+    "target_artifacts_missing",
+    "unit_output_manifest_count",
+    "harness_issue_count",
+    "error_count",
+    "warn_count",
+)
 RUN_AUDIT_DIFF_SCHEMA = "run-audit-diff.v1"
 RUN_AUDIT_DIFF_REQUIRED_KEYS = (
     "schema",
@@ -446,21 +458,7 @@ def validate_run_audit_payload(payload: dict[str, Any]) -> list[str]:
 
     run_state = _validate_object_field(payload, key="run_state", issues=issues)
     if run_state is not None:
-        if not isinstance(run_state.get("phase"), str):
-            issues.append("`run_state.phase` must be a string")
-        for key in (
-            "units_total",
-            "active_units",
-            "target_artifacts_total",
-            "target_artifacts_present",
-            "target_artifacts_missing",
-            "unit_output_manifest_count",
-            "harness_issue_count",
-            "error_count",
-            "warn_count",
-        ):
-            if not isinstance(run_state.get(key), int):
-                issues.append(f"`run_state.{key}` must be an integer")
+        _validate_run_state_record(run_state, field_path="run_state", issues=issues)
 
     target_artifacts = _validate_list_field(payload, key="target_artifacts", issues=issues)
     if target_artifacts is not None:
@@ -640,6 +638,12 @@ def validate_artifact_pack_payload(payload: dict[str, Any]) -> list[str]:
                     issues.append(f"`source_reports.{name}.{key}` must be a string")
             if not isinstance(record.get("exit_code"), int):
                 issues.append(f"`source_reports.{name}.exit_code` must be an integer")
+            run_state = record.get("run_state")
+            if run_state is not None:
+                if not isinstance(run_state, dict):
+                    issues.append(f"`source_reports.{name}.run_state` must be an object")
+                else:
+                    _validate_run_state_record(run_state, field_path=f"source_reports.{name}.run_state", issues=issues)
 
     artifacts = _validate_list_field(payload, key="artifacts", issues=issues)
     if artifacts is not None:
@@ -773,6 +777,17 @@ def _validate_recent_reports(payload: dict[str, Any], *, issues: list[str]) -> N
             issues.append(f"`recent_reports[{idx}].path` must be a string")
         if not isinstance(record.get("preview"), str):
             issues.append(f"`recent_reports[{idx}].preview` must be a string")
+
+
+def _validate_run_state_record(record: dict[str, Any], *, field_path: str, issues: list[str]) -> None:
+    phase = record.get("phase")
+    if not isinstance(phase, str):
+        issues.append(f"`{field_path}.phase` must be a string")
+    elif phase not in RUN_STATE_PHASES:
+        issues.append(f"`{field_path}.phase` must be one of {', '.join(sorted(RUN_STATE_PHASES))}")
+    for key in RUN_STATE_INTEGER_KEYS:
+        if not isinstance(record.get(key), int):
+            issues.append(f"`{field_path}.{key}` must be an integer")
 
 
 def build_run_audit_payload(*, workspace: Path, repo_root: Path) -> tuple[int, dict[str, Any]]:
@@ -1254,6 +1269,15 @@ def render_artifact_pack_report(payload: dict[str, Any]) -> str:
             f"- `{name}`: {record.get('schema')} {record.get('verdict')} "
             f"(exit {record.get('exit_code')})"
         )
+        run_state = record.get("run_state")
+        if isinstance(run_state, dict):
+            lines.append(
+                "  - Run state: "
+                f"`{run_state.get('phase')}`; "
+                f"{run_state.get('target_artifacts_present')} target artifacts present, "
+                f"{run_state.get('target_artifacts_missing')} missing; "
+                f"{run_state.get('error_count')} errors"
+            )
 
     summary = payload.get("summary") or {}
     lines.extend(
@@ -1668,11 +1692,18 @@ def _artifact_pack_summary(records: list[dict[str, Any]]) -> dict[str, Any]:
 
 
 def _source_report_record(payload: dict[str, Any]) -> dict[str, Any]:
-    return {
+    record: dict[str, Any] = {
         "schema": str(payload.get("schema") or ""),
         "verdict": str(payload.get("verdict") or ""),
         "exit_code": int(payload.get("exit_code") or 0),
     }
+    run_state = payload.get("run_state")
+    if isinstance(run_state, dict):
+        record["run_state"] = {
+            "phase": str(run_state.get("phase") or ""),
+            **{key: run_state.get(key) if isinstance(run_state.get(key), int) else 0 for key in RUN_STATE_INTEGER_KEYS},
+        }
+    return record
 
 
 def _artifact_pack_record_details(record: dict[str, Any]) -> str:

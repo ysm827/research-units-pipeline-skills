@@ -195,6 +195,7 @@ Observed result:
 ```text
 artifact-pack.v1
 source reports: doctor-report.v1, run-audit.v1, improvement-report.v1
+run state: attention from run-audit.v1
 categories: target_artifact, unit_output, run_ledger, harness_report, unit_manifest
 verdict: ATTENTION
 ```

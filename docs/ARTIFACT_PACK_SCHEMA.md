@@ -43,7 +43,7 @@ compress outputs, publish a bundle, or judge semantic quality.
 | `repo` | string | Absolute repo root path used for the manifest. |
 | `pipeline` | string | Resolved pipeline name, or empty when the locked spec cannot be resolved. |
 | `artifact_interface_standard` | string | Current artifact interface standard reference. |
-| `source_reports` | object | Compact verdicts for doctor, run-audit, and improvement-report evidence. |
+| `source_reports` | object | Compact verdicts for doctor, run-audit, improvement-report evidence, and run-state handoff when available. |
 | `artifacts` | list | Indexed workspace artifacts grouped by review role. |
 | `summary` | object | Present/missing counts for the whole pack and each category. |
 | `verdict` | string | `PASS` when source reports pass; otherwise `ATTENTION`. |
@@ -64,6 +64,12 @@ Each source report record contains:
 | `schema` | string | Source payload schema name. |
 | `verdict` | string | Source report verdict. |
 | `exit_code` | integer | Source report exit code. |
+
+The `run_audit` source report may also contain `run_state`, copied from
+`run-audit.v1`. This lets artifact-pack consumers route on the run phase and
+artifact coverage without opening `output/RUN_AUDIT.json` first. The copied
+state keeps the same conservative meaning as the run audit: it summarizes
+harness evidence and does not judge semantic quality.
 
 ## Artifact Records
 
