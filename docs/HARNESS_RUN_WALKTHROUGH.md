@@ -123,6 +123,7 @@ Observed result:
 run-audit.v1
 pipeline: research-brief
 current checkpoint: C0
+run state: attention, active units 11, missing target artifacts 2
 unit status: TODO 11
 verdict: ATTENTION
 ```

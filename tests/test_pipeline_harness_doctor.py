@@ -77,6 +77,18 @@ def run_audit_payload(
             "CHECKPOINTS.md": True,
             "DECISIONS.md": True,
         },
+        "run_state": {
+            "phase": "attention" if issues else "complete_candidate",
+            "units_total": sum(unit_status.values()),
+            "active_units": sum(unit_status.get(status, 0) for status in ("TODO", "DOING", "BLOCKED")),
+            "target_artifacts_total": len(target_artifacts),
+            "target_artifacts_present": sum(1 for item in target_artifacts if item.get("exists") is True),
+            "target_artifacts_missing": sum(1 for item in target_artifacts if item.get("exists") is not True),
+            "unit_output_manifest_count": manifest_count,
+            "harness_issue_count": len(issues),
+            "error_count": len([issue for issue in issues if issue.get("level") == "ERROR"]),
+            "warn_count": len([issue for issue in issues if issue.get("level") == "WARN"]),
+        },
         "unit_status": unit_status,
         "target_artifacts": target_artifacts,
         "unit_output_manifests": {
@@ -354,6 +366,8 @@ def test_audit_writes_compact_run_ledger_when_artifacts_are_present(tmp_path: Pa
     assert "Pipeline: `research-brief`" in result.stdout
     assert "JSON sidecar: `output/RUN_AUDIT.json`" in result.stdout
     assert "Current checkpoint: `C3`" in result.stdout
+    assert "Phase: `complete_candidate`" in result.stdout
+    assert "Target artifacts: 16 present / 0 missing" in result.stdout
     assert "DONE: 1" in result.stdout
     assert "Manifests: 1" in result.stdout
     assert "No harness issues" in result.stdout
@@ -362,6 +376,9 @@ def test_audit_writes_compact_run_ledger_when_artifacts_are_present(tmp_path: Pa
     assert audit_payload["schema"] == "run-audit.v1"
     assert audit_payload["pipeline"] == "research-brief"
     assert audit_payload["verdict"] == "PASS"
+    assert audit_payload["run_state"]["phase"] == "complete_candidate"
+    assert audit_payload["run_state"]["target_artifacts_missing"] == 0
+    assert audit_payload["run_state"]["unit_output_manifest_count"] == 1
     assert audit_payload["unit_status"] == {"DONE": 1}
     assert audit_payload["unit_output_manifests"]["count"] == 1
     assert validate_run_audit_payload(audit_payload) == []
@@ -377,6 +394,7 @@ def test_run_audit_payload_validator_reports_schema_drift() -> None:
         "pipeline": "",
         "current_checkpoint": "unknown",
         "run_ledger_files": {"UNITS.csv": "yes"},
+        "run_state": {"phase": 10, "units_total": "1"},
         "unit_status": {"DONE": "1"},
         "target_artifacts": [{"path": "output/SNAPSHOT.md", "exists": True}],
         "unit_output_manifests": {"count": 0, "by_status": {}, "latest": {}, "records": []},
@@ -392,6 +410,9 @@ def test_run_audit_payload_validator_reports_schema_drift() -> None:
     assert "`schema` must be `run-audit.v1`" in issues
     assert "`run_ledger_files.PIPELINE.lock.md` is missing" in issues
     assert "`run_ledger_files.UNITS.csv` must be a boolean" in issues
+    assert "`run_state.phase` must be a string" in issues
+    assert "`run_state.units_total` must be an integer" in issues
+    assert "`run_state.active_units` must be an integer" in issues
     assert "`unit_status.DONE` must be an integer" in issues
 
 

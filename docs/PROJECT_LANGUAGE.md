@@ -479,6 +479,16 @@ Use this schema reference when writing tools that consume `output/RUN_AUDIT.json
 Use `validate_run_audit_payload` to check payload compatibility before relying
 on the fields.
 
+### Run state
+
+The compact harness-level summary inside `run-audit.v1`.
+
+Use run state when a downstream tool, reviewer, or resumed agent needs a quick
+routing answer before reading the full ledger. Current phases are `attention`,
+`in_progress`, and `complete_candidate`. Do not use run state as a semantic
+quality score; it summarizes harness evidence such as active units, target
+artifact presence, manifest count, and issue counts.
+
 ### Run audit diff schema
 
 The `run-audit-diff.v1` field contract in

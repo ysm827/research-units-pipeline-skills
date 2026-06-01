@@ -47,6 +47,7 @@ RUN_AUDIT_REQUIRED_KEYS = (
     "pipeline",
     "current_checkpoint",
     "run_ledger_files",
+    "run_state",
     "unit_status",
     "target_artifacts",
     "unit_output_manifests",
@@ -443,6 +444,24 @@ def validate_run_audit_payload(payload: dict[str, Any]) -> list[str]:
     _validate_int_mapping(payload, key="unit_status", issues=issues)
     _validate_int_mapping(payload, key="remediation_summary", issues=issues)
 
+    run_state = _validate_object_field(payload, key="run_state", issues=issues)
+    if run_state is not None:
+        if not isinstance(run_state.get("phase"), str):
+            issues.append("`run_state.phase` must be a string")
+        for key in (
+            "units_total",
+            "active_units",
+            "target_artifacts_total",
+            "target_artifacts_present",
+            "target_artifacts_missing",
+            "unit_output_manifest_count",
+            "harness_issue_count",
+            "error_count",
+            "warn_count",
+        ):
+            if not isinstance(run_state.get(key), int):
+                issues.append(f"`run_state.{key}` must be an integer")
+
     target_artifacts = _validate_list_field(payload, key="target_artifacts", issues=issues)
     if target_artifacts is not None:
         for idx, item in enumerate(target_artifacts):
@@ -806,6 +825,12 @@ def build_run_audit_payload(*, workspace: Path, repo_root: Path) -> tuple[int, d
         "pipeline": spec.name if spec is not None else "",
         "current_checkpoint": checkpoint,
         "run_ledger_files": ledger_files,
+        "run_state": _run_state_record(
+            unit_status=unit_status,
+            target_artifacts=target_records,
+            manifests=manifests,
+            issues=issues,
+        ),
         "unit_status": unit_status,
         "target_artifacts": target_records,
         "unit_output_manifests": {
@@ -845,6 +870,25 @@ def render_run_audit_report(payload: dict[str, Any]) -> str:
     for relpath, exists in (payload.get("run_ledger_files") or {}).items():
         status = "present" if exists else "missing"
         lines.append(f"- `{relpath}`: {status}")
+
+    run_state = payload.get("run_state") or {}
+    lines.extend(["", "## Run state"])
+    if run_state:
+        lines.append(f"- Phase: `{run_state.get('phase')}`")
+        lines.append(f"- Units total: {run_state.get('units_total')}")
+        lines.append(f"- Active units: {run_state.get('active_units')}")
+        lines.append(
+            "- Target artifacts: "
+            f"{run_state.get('target_artifacts_present')} present / "
+            f"{run_state.get('target_artifacts_missing')} missing"
+        )
+        lines.append(f"- Unit output manifests: {run_state.get('unit_output_manifest_count')}")
+        lines.append(
+            "- Harness issues: "
+            f"{run_state.get('error_count')} errors, {run_state.get('warn_count')} warnings"
+        )
+    else:
+        lines.append("- Run state unavailable")
 
     lines.extend(["", "## Unit status"])
     unit_status = payload.get("unit_status") or {}
@@ -1401,6 +1445,38 @@ def _doctor_resume_hint(
         "kind": "audit_state",
         "command": f"python scripts/pipeline.py audit --workspace {workspace} --write",
         "reason": "No runnable unit is currently available; audit the run state before continuing.",
+    }
+
+
+def _run_state_record(
+    *,
+    unit_status: dict[str, int],
+    target_artifacts: list[dict[str, Any]],
+    manifests: list[dict[str, Any]],
+    issues: list[HarnessIssue],
+) -> dict[str, Any]:
+    level_counts = Counter(issue.level for issue in issues)
+    missing_targets = sum(1 for item in target_artifacts if not item.get("exists"))
+    active_units = sum(unit_status.get(status, 0) for status in ("TODO", "DOING", "BLOCKED"))
+    error_count = level_counts["ERROR"]
+    if error_count:
+        phase = "attention"
+    elif active_units:
+        phase = "in_progress"
+    else:
+        phase = "complete_candidate"
+
+    return {
+        "phase": phase,
+        "units_total": sum(unit_status.values()),
+        "active_units": active_units,
+        "target_artifacts_total": len(target_artifacts),
+        "target_artifacts_present": len(target_artifacts) - missing_targets,
+        "target_artifacts_missing": missing_targets,
+        "unit_output_manifest_count": len(manifests),
+        "harness_issue_count": len(issues),
+        "error_count": error_count,
+        "warn_count": level_counts["WARN"],
     }
 
 

@@ -31,6 +31,7 @@ workflow standard and does not claim semantic artifact quality.
 | `pipeline` | string | Resolved pipeline name, or empty when the locked spec cannot be resolved. |
 | `current_checkpoint` | string | Current checkpoint parsed from `STATUS.md`, or `unknown`. |
 | `run_ledger_files` | object | Presence map for core workspace ledger files. |
+| `run_state` | object | Compact harness-level run state summary for routing and review. |
 | `unit_status` | object | Counts by unit status from `UNITS.csv`. |
 | `target_artifacts` | list | Presence records for pipeline target artifacts. |
 | `unit_output_manifests` | object | Summary and records from `output/unit_logs/*.manifest.json`. |
@@ -52,6 +53,27 @@ workflow standard and does not claim semantic artifact quality.
 - `DECISIONS.md`
 
 These files make a workspace inspectable without relying on chat history.
+
+## Run State
+
+`run_state` is always present and contains:
+
+| Field | Type | Meaning |
+|---|---|---|
+| `phase` | string | Harness-level phase: `attention`, `in_progress`, or `complete_candidate`. |
+| `units_total` | integer | Total units counted from `UNITS.csv`. |
+| `active_units` | integer | Units still `TODO`, `DOING`, or `BLOCKED`. |
+| `target_artifacts_total` | integer | Number of target artifacts declared by the locked pipeline. |
+| `target_artifacts_present` | integer | Declared target artifacts present in the workspace. |
+| `target_artifacts_missing` | integer | Declared target artifacts missing from the workspace. |
+| `unit_output_manifest_count` | integer | Number of unit output manifests discovered. |
+| `harness_issue_count` | integer | Total harness issues in this audit. |
+| `error_count` | integer | Error-level harness issues. |
+| `warn_count` | integer | Warning-level harness issues. |
+
+The phase is a routing summary, not a semantic quality judgment.
+`complete_candidate` means the harness did not find active units or
+error-level issues; it does not prove the final deliverable is good.
 
 ## Target Artifacts
 

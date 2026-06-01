@@ -186,6 +186,8 @@ Candidate changes:
   for the `run-audit.v1` shape before adding comparison tooling.
 - Keep `docs/RUN_AUDIT_SCHEMA.md` aligned with that compatibility check so
   future consumers do not need to reverse-engineer the payload from tests.
+- Add a compact `run_state` summary to `run-audit.v1` so review tools and
+  resumed agents can route on harness state before reading the full ledger.
 - Reuse the same schema validation helpers that power doctor-report checks.
 - Keep schema reference metadata validation in `scripts/validate_repo.py` so
   the schema name, JSON path, producer, validator, and ADR link stay visible.
@@ -204,6 +206,8 @@ Acceptance:
 - A completed workspace can answer: which pipeline ran, which units completed,
   which artifacts were produced, which checks passed, and which decisions were
   made.
+- A run audit exposes a validated phase summary without claiming semantic
+  quality for the final deliverable.
 - Regression comparison is possible without replaying the whole workflow.
 - Tests fail if the `run-audit.v1` payload loses required fields or key
   container types.
